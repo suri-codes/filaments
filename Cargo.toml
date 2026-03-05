@@ -1,0 +1,8 @@
+[workspace]
+name = "filaments"
+author = "suri.codes <suri312006@gmail.com>"
+resolver = "3"
+members = ["fil-types"]
+
+
+

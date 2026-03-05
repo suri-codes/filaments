@@ -1,0 +1,20 @@
+when:
+  - event: ["push", "pull_request"]
+    branch: ["main"]
+
+engine: "nixery"
+
+dependencies:
+  nixpkgs:
+    - cargo
+    - clippy
+    - gcc
+    - just
+
+steps:
+    - name: clippy
+      command: |
+        cargo clippy -- -D warnings
+    - name: build
+      command: |
+        just build
