@@ -1,0 +1,46 @@
+[workspace]
+members = []
+
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["suri.codes <suri312006@gmail.com>"]
+description = "Personal-Knowledge-System, with deeply integrated task tracking and long term goal planning capabilities."
+license = "GNU GPLv3"
+repository = "https://tangled.org/suri-codes/filaments"
+# once we have this up on my website
+# homepage = ""
+# documentation = ""
+readme = "README.md"
+keywords = ["PKS", "todo", "personal tools"]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = "deny"
+nursery = "deny"
+
+[workspace.dependencies]
+
+
+[package]
+name = "filaments"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+repository.workspace = true
+# homepage.workspace = true
+# documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+
