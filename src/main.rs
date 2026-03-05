@@ -3,6 +3,7 @@
 //!
 
 mod errors;
+mod tui;
 
 fn main() -> color_eyre::Result<()> {
     errors::init()?;
