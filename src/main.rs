@@ -2,6 +2,10 @@
 //! My (suri.codes) personal-knowledge-system, with deeply integrated task tracking and long term goal planning capabilities.
 //!
 
-fn main() {
-    println!("Hello, world!");
+mod errors;
+
+fn main() -> color_eyre::Result<()> {
+    errors::init()?;
+
+    Ok(())
 }

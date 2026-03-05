@@ -24,7 +24,8 @@ pedantic = "deny"
 nursery = "deny"
 
 [workspace.dependencies]
-
+snafu = "0.9.0"
+tracing = "0.1.44"
 
 [package]
 name = "filaments"
@@ -43,4 +44,7 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-
+tracing = {workspace = true}
+color-eyre = "0.6.5"
+human-panic = "2.0.6"
+better-panic = "0.3.0"
