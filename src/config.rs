@@ -1,26 +1,27 @@
 use directories::ProjectDirs;
 use lazy_static::lazy_static;
 use serde::Deserialize;
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, sync::LazyLock};
 
-lazy_static! {
-    /// Filaments
-    pub static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase().to_string();
-    /// Data folder override if user has manually set FILAMENTS_DATA to a directory.
-    pub static ref DATA_FOLDER: Option<PathBuf> =
-        env::var(format!("{}_DATA", PROJECT_NAME.clone()))
-            .ok()
-            .map(PathBuf::from);
-    /// Config folder override if user has manually set FILAMENTS_CONFIG to a directory.
-    pub static ref CONFIG_FOLDER: Option<PathBuf> =
-        env::var(format!("{}_CONFIG", PROJECT_NAME.clone()))
-            .ok()
-            .map(PathBuf::from);
-}
+// #[expect(dead_code)]
+static PROJECT_NAME: LazyLock<String> = LazyLock::new(|| env!("CARGO_CRATE_NAME").to_uppercase());
+
+#[expect(dead_code)]
+static DATA_FOLDER: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
+    env::var(format!("{}_DATA", PROJECT_NAME.clone()))
+        .ok()
+        .map(PathBuf::from)
+});
+#[expect(dead_code)]
+static CONFIG_FOLDER: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
+    env::var(format!("{}_CONFIG", PROJECT_NAME.clone()))
+        .ok()
+        .map(PathBuf::from)
+});
 
 /// The App Config and Data locations.
 #[derive(Clone, Debug, Deserialize, Default)]
-
+#[expect(dead_code)]
 pub struct AppDirs {
     #[serde(default)]
     pub data_dir: PathBuf,
@@ -29,6 +30,7 @@ pub struct AppDirs {
 }
 
 /// Configuration for the App
+#[expect(dead_code)]
 pub struct Config {
     pub app_dirs: AppDirs, // pub data_dir: PathBuf,
                            // pub keybindings: KeyBindings,
@@ -36,6 +38,7 @@ pub struct Config {
                            // pub styles: Styles,
 }
 
+#[expect(dead_code)]
 impl Config {
     pub fn new() -> Self {
         todo!()

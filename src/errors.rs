@@ -3,7 +3,7 @@
 /// Additionally the panic handler prints different information
 /// based on debug / release builds.
 pub fn init() -> color_eyre::Result<()> {
-    let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
+    let (_, eyre_hook) = color_eyre::config::HookBuilder::default()
         .panic_section(format!(
             "This is a bug. Please report it at {}",
             env!("CARGO_PKG_REPOSITORY")

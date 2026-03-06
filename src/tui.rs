@@ -13,6 +13,7 @@ use crossterm::{
     },
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode},
 };
+use futures::{FutureExt as _, StreamExt as _};
 use ratatui::{Terminal, prelude::CrosstermBackend};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
@@ -23,6 +24,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::error;
 
 /// Events processed by the whole application.
+#[expect(dead_code)]
 pub enum Event {
     /// Application initialized
     Init,
@@ -74,6 +76,7 @@ pub struct Tui {
     pub paste_enabled: bool,
 }
 
+#[expect(dead_code)]
 impl Tui {
     /// Creates a new TUI.
     pub fn new() -> Result<Self> {
@@ -150,7 +153,7 @@ impl Tui {
             .expect("Tui::event_loop: Failed to send init event.");
         loop {
             let event = tokio::select! {
-                _ = cancellation_token.cancelled() => {
+                () = cancellation_token.cancelled() => {
                     break;
                 }
                 _ = tick_interval.tick() => Event::Tick,
@@ -160,12 +163,13 @@ impl Tui {
                         // we only care about press down events,
                         // not doing anything related to up / down keypresses
                         CrosstermEvent::Key(key) if key.kind == KeyEventKind::Press => Event::Key(key),
+                        CrosstermEvent::Key(_) => continue,
+
                         CrosstermEvent::Mouse(mouse) => Event::Mouse(mouse),
                         CrosstermEvent::Resize(x, y) => Event::Resize(x, y),
                         CrosstermEvent::FocusLost => {Event::FocusLost },
                         CrosstermEvent::FocusGained => {Event::FocusGained },
                         CrosstermEvent::Paste(s)=> {Event::Paste(s)},
-                        _ => continue,
 
                     }
                     Some(Err(_)) => Event::Error,
