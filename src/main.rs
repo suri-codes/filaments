@@ -5,11 +5,13 @@
 mod components;
 mod config;
 mod errors;
+mod logging;
 mod signal;
 mod tui;
 
 fn main() -> color_eyre::Result<()> {
     errors::init()?;
+    logging::init()?;
 
     Ok(())
 }

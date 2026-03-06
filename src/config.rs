@@ -1,19 +1,20 @@
 use directories::ProjectDirs;
-use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::{env, path::PathBuf, sync::LazyLock};
 
-// #[expect(dead_code)]
-static PROJECT_NAME: LazyLock<String> = LazyLock::new(|| env!("CARGO_CRATE_NAME").to_uppercase());
+/// Project Name: Filaments
+pub static PROJECT_NAME: LazyLock<String> =
+    LazyLock::new(|| env!("CARGO_CRATE_NAME").to_uppercase());
 
-#[expect(dead_code)]
-static DATA_FOLDER: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
+/// The OS-agnostic data directory for the project.
+pub static DATA_DIRECTORY: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
     env::var(format!("{}_DATA", PROJECT_NAME.clone()))
         .ok()
         .map(PathBuf::from)
 });
-#[expect(dead_code)]
-static CONFIG_FOLDER: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
+
+/// The OS-agnostic config directory for the project.
+pub static CONFIG_DIRECTORY: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
     env::var(format!("{}_CONFIG", PROJECT_NAME.clone()))
         .ok()
         .map(PathBuf::from)
@@ -47,26 +48,23 @@ impl Config {
 
 /// Returns the path to the OS-agnostic data directory.
 pub fn get_data_dir() -> PathBuf {
-    let directory = if let Some(s) = DATA_FOLDER.clone() {
-        s
-    } else if let Some(proj_dirs) = project_directory() {
-        proj_dirs.data_local_dir().to_path_buf()
-    } else {
-        PathBuf::from(".").join(".data")
-    };
-    directory
+    DATA_DIRECTORY.clone().unwrap_or_else(|| {
+        project_directory().map_or_else(
+            || PathBuf::from(".").join(".data"),
+            |proj_dirs| proj_dirs.data_local_dir().to_path_buf(),
+        )
+    })
 }
 
 /// Returns the path to the OS-agnostic config directory.
+#[expect(dead_code)]
 pub fn get_config_dir() -> PathBuf {
-    let directory = if let Some(s) = CONFIG_FOLDER.clone() {
-        s
-    } else if let Some(proj_dirs) = project_directory() {
-        proj_dirs.config_local_dir().to_path_buf()
-    } else {
-        PathBuf::from(".").join(".config")
-    };
-    directory
+    CONFIG_DIRECTORY.clone().unwrap_or_else(|| {
+        project_directory().map_or_else(
+            || PathBuf::from(".").join(".config"),
+            |proj_dirs| proj_dirs.config_local_dir().to_path_buf(),
+        )
+    })
 }
 
 fn project_directory() -> Option<ProjectDirs> {
