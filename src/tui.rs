@@ -25,6 +25,7 @@ use tracing::error;
 
 /// Events processed by the whole application.
 #[expect(dead_code)]
+#[derive(Debug, Clone)]
 pub enum Event {
     /// Application initialized
     Init,

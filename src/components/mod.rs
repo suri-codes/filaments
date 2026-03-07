@@ -11,8 +11,7 @@ use crate::{config::Config, signal::Signal, tui::Event};
 ///
 /// Implementers of this trait can be registered with the main application loop and will be able to
 /// receive events, update state, and be rendered on the screen.
-#[expect(dead_code)]
-pub trait Component {
+pub trait Component: Send {
     /// Register a signal handler that can send signals for processing if necessary.
     ///
     /// # Arguments

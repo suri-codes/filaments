@@ -2,6 +2,7 @@
 //! My (suri.codes) personal-knowledge-system, with deeply integrated task tracking and long term goal planning capabilities.
 //!
 
+mod app;
 mod components;
 mod config;
 mod errors;

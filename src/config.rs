@@ -32,6 +32,7 @@ pub struct AppDirs {
 
 /// Configuration for the App
 #[expect(dead_code)]
+#[derive(Debug, Clone)]
 pub struct Config {
     pub app_dirs: AppDirs, // pub data_dir: PathBuf,
                            // pub keybindings: KeyBindings,
@@ -39,7 +40,6 @@ pub struct Config {
                            // pub styles: Styles,
 }
 
-#[expect(dead_code)]
 impl Config {
     pub fn new() -> Self {
         todo!()
