@@ -42,7 +42,12 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Self {
-        todo!()
+        Self {
+            app_dirs: AppDirs {
+                data_dir: get_data_dir(),
+                config_dir: get_config_dir(),
+            },
+        }
     }
 }
 
@@ -57,7 +62,6 @@ pub fn get_data_dir() -> PathBuf {
 }
 
 /// Returns the path to the OS-agnostic config directory.
-#[expect(dead_code)]
 pub fn get_config_dir() -> PathBuf {
     CONFIG_DIRECTORY.clone().unwrap_or_else(|| {
         project_directory().map_or_else(

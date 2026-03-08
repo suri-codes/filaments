@@ -35,7 +35,6 @@ pub enum Region {
     Home,
 }
 
-#[expect(dead_code)]
 impl App {
     /// Construct a new `App` instance.
     pub fn new(tick_rate: f64, frame_rate: f64) -> Self {

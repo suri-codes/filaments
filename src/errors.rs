@@ -3,7 +3,7 @@
 /// Additionally the panic handler prints different information
 /// based on debug / release builds.
 pub fn init() -> color_eyre::Result<()> {
-    let (_, eyre_hook) = color_eyre::config::HookBuilder::default()
+    let (_panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
         .panic_section(format!(
             "This is a bug. Please report it at {}",
             env!("CARGO_PKG_REPOSITORY")
@@ -25,7 +25,7 @@ pub fn init() -> color_eyre::Result<()> {
             let file_path = handle_dump(&metadata, panic_info);
             print_msg(file_path, &metadata)
                 .expect("human-panic: printing error message to console failed");
-            eprintln!("{}", panic_hook.panic_report(panic_info));
+            eprintln!("{}", _panic_hook.panic_report(panic_info));
         }
 
         // in debug mode do better panic printing
