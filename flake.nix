@@ -1,5 +1,5 @@
 {
-  description = "An empty flake template that you can adapt to your own environment";
+  description = "Filaments dev flake";
 
   # Flake inputs
   inputs = {
