@@ -3,7 +3,6 @@
 //!
 
 use clap::Parser;
-
 use crate::{app::App, cli::Cli};
 
 mod app;
@@ -11,6 +10,7 @@ mod cli;
 mod components;
 mod config;
 mod errors;
+mod keymap;
 mod logging;
 mod signal;
 mod tui;

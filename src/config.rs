@@ -1,6 +1,9 @@
 use directories::ProjectDirs;
+use kdl::KdlDocument;
 use serde::Deserialize;
 use std::{env, path::PathBuf, sync::LazyLock};
+
+use crate::keymap::KeyMap;
 
 /// Project Name: Filaments
 pub static PROJECT_NAME: LazyLock<String> =
@@ -20,10 +23,12 @@ pub static CONFIG_DIRECTORY: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
         .map(PathBuf::from)
 });
 
+const DEFAULT_CONFIG: &str = include_str!("../.config/config.kdl");
+
 /// The App Config and Data locations.
 #[derive(Clone, Debug, Deserialize, Default)]
 #[expect(dead_code)]
-pub struct AppDirs {
+pub struct AppConfig {
     #[serde(default)]
     pub data_dir: PathBuf,
     #[serde(default)]
@@ -34,19 +39,30 @@ pub struct AppDirs {
 #[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub app_dirs: AppDirs, // pub data_dir: PathBuf,
-                           // pub keybindings: KeyBindings,
-
-                           // pub styles: Styles,
+    pub app_config: AppConfig,
+    pub keymap: KeyMap,
+    // pub styles: Styles,
 }
 
 impl Config {
     pub fn new() -> Self {
+        let default_config: KdlDocument = DEFAULT_CONFIG
+            .parse()
+            .expect("Default config should always be a valid KDL document.");
+
+        let keymap_node = default_config
+            .get("keymap")
+            .expect("Config::new Keymap must exist in default config.");
+
+        let keymap =
+            KeyMap::try_from(keymap_node).expect("default config should always be a valid keymap");
+
         Self {
-            app_dirs: AppDirs {
+            app_config: AppConfig {
                 data_dir: get_data_dir(),
                 config_dir: get_config_dir(),
             },
+            keymap,
         }
     }
 }

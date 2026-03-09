@@ -165,7 +165,6 @@ impl Tui {
                         // not doing anything related to up / down keypresses
                         CrosstermEvent::Key(key) if key.kind == KeyEventKind::Press => Event::Key(key),
                         CrosstermEvent::Key(_) => continue,
-
                         CrosstermEvent::Mouse(mouse) => Event::Mouse(mouse),
                         CrosstermEvent::Resize(x, y) => Event::Resize(x, y),
                         CrosstermEvent::FocusLost => {Event::FocusLost },
@@ -177,8 +176,8 @@ impl Tui {
                     None => break,
                 }
             };
+
             if event_tx.send(event).is_err() {
-                // no more receiver
                 break;
             }
         }

@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use color_eyre::eyre::eyre;
 use strum::Display;
 
 use serde::{Deserialize, Serialize};
@@ -14,4 +17,21 @@ pub enum Signal {
     ClearScreen,
     Error(String),
     Help,
+}
+
+impl FromStr for Signal {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "suspend" => Self::Suspend,
+            "resume" => Self::Resume,
+            "quit" => Self::Quit,
+            _ => {
+                return Err(eyre!(format!(
+                    "Attempt to construct a non-user Signal from str: {s}"
+                )));
+            }
+        })
+    }
 }

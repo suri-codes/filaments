@@ -1,50 +1,8 @@
-scroll_offset 4
 
-keybindings {
-    Explorer {
-        "<q>" Quit // Quit the application
-        "<Ctrl-d>" Quit // Another way to quit
-        "<Ctrl-c>" Quit // Yet another way to quit
-        "<Ctrl-z>" Suspend // Suspend the application
-        "<2>" switch-to="TodoList"
-        "<3>" switch-to="Inspector"
-        f ToggleShowFinished
-        x Delete
-        t NewTask
-        g NewSubGroup
-        "<Shift-g>" NewGroup
-        j MoveDown
-        k MoveUp
-        l MoveInto
-        h MoveOutOf
-    }
-
-    TodoList {
-        "<q>" Quit // Quit the application
-        "<Ctrl-d>" Quit // Another way to quit
-        "<Ctrl-c>" Quit // Yet another way to quit
-        "<Ctrl-z>" Suspend // Suspend the application
-        "<1>" switch-to="Explorer"
-        "<3>" switch-to="Inspector"
-        j MoveDown
-        k MoveUp
-    }
-
-    Inspector {
-        "<q>" Quit // Quit the application
-        "<Ctrl-d>" Quit // Another way to quit
-        "<Ctrl-c>" Quit // Yet another way to quit
-        "<Ctrl-z>" Suspend // Suspend the application
-        "<1>" switch-to="Explorer"
-        "<2>" switch-to="TodoList"
-        r RandomColor
-        n EditName
-        c EditColor
-        p EditPriority
-        u EditDue
-        d EditDescription
-        f ToggleFinishTask
-        t NewTask
-        g NewSubGroup
+keymap {
+    Home {
+        <q> Quit // Quit the application
+        <Ctrl-c> Quit // Another way to quit
+        <Ctrl-z> Suspend // Suspend the application
     }
 }

@@ -2,8 +2,9 @@ use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
+use strum::{Display, EnumIter};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::{
     components::Component,
@@ -29,7 +30,9 @@ pub struct App {
 /// The different regions of the application that the user can
 /// be interacting with. Think of these kind of like the highest class of
 /// components.
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(
+    Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, Display,
+)]
 pub enum Region {
     #[default]
     Home,
@@ -75,8 +78,7 @@ impl App {
 
         loop {
             self.handle_events(&mut tui).await?;
-
-            self.handle_signals(&mut tui).await?;
+            self.handle_signals(&mut tui)?;
             if self.should_suspend {
                 tui.suspend()?;
 
@@ -101,6 +103,8 @@ impl App {
             return Ok(());
         };
 
+        debug!("received event: {event:?}");
+
         let signal_tx = self.signal_tx.clone();
 
         match event {
@@ -122,24 +126,32 @@ impl App {
         Ok(())
     }
 
-    // We are okay with this because we know that this is the function signature,
-    // we just haven't implemented the keyboard parsing logic just yet, revisit
-    // this later.
-    //
-    // DO NOT LET THIS MERGE INTO MAIN WITH THIS CLIPPY IGNORES
-    #[allow(clippy::needless_pass_by_ref_mut, clippy::unnecessary_wraps)]
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
-        let _signal_tx = self.signal_tx.clone();
+        debug!("key received: {key:#?}");
 
-        info!("key received: {key:#?}");
+        let signal_tx = self.signal_tx.clone();
+
+        let Some(region_keymap) = self.config.keymap.get(&self.region) else {
+            return Ok(());
+        };
+
+        if let Some(signal) = region_keymap.get(&vec![key]) {
+            signal_tx.send(signal.clone())?;
+        } else {
+            self.last_tick_key_events.push(key);
+            if let Some(signal) = region_keymap.get(&self.last_tick_key_events) {
+                debug!("Got signal: {signal:?}");
+                signal_tx.send(signal.clone())?;
+            }
+        }
 
         Ok(())
     }
 
-    async fn handle_signals(&mut self, tui: &mut Tui) -> Result<()> {
-        while let Some(signal) = self.signal_rx.recv().await {
+    fn handle_signals(&mut self, tui: &mut Tui) -> Result<()> {
+        while let Ok(signal) = self.signal_rx.try_recv() {
             if signal != Signal::Tick && signal != Signal::Render {
-                debug!("App: handling signal: {signal:?}");
+                debug!("handling signal: {signal:?}");
             }
 
             match signal {
