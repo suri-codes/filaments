@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/db"]
+members = ["crates/db", "crates/sakura"]
 
 
 [workspace.package]
@@ -26,6 +26,7 @@ nursery = "deny"
 
 [workspace.dependencies]
 snafu = "0.9.0"
+serde = "1.0.228"
 tracing = "0.1.44"
 
 [package]
