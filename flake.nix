@@ -73,8 +73,7 @@
               cargo-watch
               rust-analyzer
 
-              typst
-              typstyle
+              bacon
             ];
 
             # Set any environment variables for your dev shell
