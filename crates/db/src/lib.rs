@@ -3,6 +3,7 @@
 
 use std::path::Path;
 
+use migration::{Migrator, MigratorTrait};
 use sea_orm::{Database, DatabaseConnection};
 use tracing::debug;
 
@@ -35,6 +36,9 @@ impl Db {
         debug!("connecting to {connection_string}");
 
         let conn = Database::connect(connection_string).await?;
+
+        // run all migrations on connection
+        Migrator::up(&conn, None).await?;
 
         Ok(Self { conn })
     }
