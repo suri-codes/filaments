@@ -1,5 +1,9 @@
 [workspace]
-members = ["crates/db", "crates/sakura"]
+members = [
+  "crates/db",
+  "crates/db/migration",
+  "crates/sakura"
+]
 
 
 [workspace.package]
