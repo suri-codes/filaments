@@ -6,8 +6,6 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Replace the sample below with your own migration scripts
-
         manager
             .create_table(
                 Table::create()
@@ -57,26 +55,35 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Group {
+pub enum Group {
     Table,
+
     /// Unique integer id
     Id,
+
     /// Unique nano-id that is userfacing
     NanoId,
-    /// Name of the group
-    Name,
+
     /// Nano-id of the parent of this group
     ParentGroupId,
+
+    /// Name of the group
+    Name,
+
     /// Color of this group
     /// NOTE: color is a string that looks like "#FFFFFF"
     Color,
+
     /// Priority level of the group
     Priority,
+
     /// The relative file path to the location of
     /// the description note for this task
     DescriptionPath,
+
     /// Creation time
     CreatedAt,
+
     /// Last modified
     ModifiedAt,
 }

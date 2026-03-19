@@ -21,7 +21,6 @@ struct Db {
     conn: DatabaseConnection,
 }
 
-#[expect(dead_code)]
 impl Db {
     async fn connect(path: &Path) -> DbResult<Self> {
         let connection_string = dbg! {format!(
