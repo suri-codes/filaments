@@ -11,6 +11,10 @@ use crate::errors::{DbError, DbResult};
 
 /// Database Errors
 mod errors;
+
+/// Database entities
+mod entity;
+
 #[expect(unused_imports)]
 pub use errors::*;
 

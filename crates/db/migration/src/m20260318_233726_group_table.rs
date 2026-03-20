@@ -20,6 +20,7 @@ impl MigrationTrait for Migration {
                     .col(integer(Group::Priority).not_null().default(0))
                     .col(timestamp(Group::CreatedAt).default(Expr::current_timestamp()))
                     .col(timestamp(Group::ModifiedAt).default(Expr::current_timestamp()))
+                    .col(string_null(Group::ParentGroupId))
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_group_parent_id") // unique constraint name

@@ -21,6 +21,7 @@ impl MigrationTrait for Migration {
                     .col(timestamp(Task::Due).null())
                     .col(timestamp(Task::CreatedAt).default(Expr::current_timestamp()))
                     .col(timestamp(Task::ModifiedAt).default(Expr::current_timestamp()))
+                    .col(string_null(Task::GroupId))
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_task_group_id") // unique constraint name
