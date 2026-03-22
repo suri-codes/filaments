@@ -1,5 +1,6 @@
 
 keymap {
+
     Home {
         q Quit // Quit the application
         <Ctrl-c> Quit // Another way to quit

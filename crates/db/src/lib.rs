@@ -1,7 +1,7 @@
 //! The database abstraction for the different actions `Filaments` requires
 //! from a database service.
 
-use std::path::Path;
+use std::path::PathBuf;
 
 use migration::{Migrator, MigratorTrait};
 use sea_orm::{Database, DatabaseConnection};
@@ -13,28 +13,41 @@ use crate::errors::{DbError, DbResult};
 mod errors;
 
 /// Database entities
-mod entity;
+pub mod entity;
+
+pub use sea_orm::ActiveValue;
 
 #[expect(unused_imports)]
 pub use errors::*;
 
 /// Database struct
-#[expect(dead_code)]
 #[derive(Debug)]
-struct Db {
+pub struct Db {
     conn: DatabaseConnection,
 }
 
+impl AsRef<DatabaseConnection> for Db {
+    fn as_ref(&self) -> &DatabaseConnection {
+        &self.conn
+    }
+}
+
 impl Db {
-    async fn connect(path: &Path) -> DbResult<Self> {
-        let connection_string = dbg! {format!(
+    /// Connects to the database to the database at `path`.
+    ///
+    /// # Errors
+    /// Will error if `path` is not a valid file.
+    pub async fn connect(path: impl Into<PathBuf>) -> DbResult<Self> {
+        let path = path.into();
+
+        let connection_string = format!(
             "sqlite://{}",
             path.canonicalize()
                 .map_err(|_| DbError::NotFound {
                     not_found_at: path.to_string_lossy().to_string()
                 })?
                 .to_string_lossy()
-        )};
+        );
 
         debug!("connecting to {connection_string}");
 

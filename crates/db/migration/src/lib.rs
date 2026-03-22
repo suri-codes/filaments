@@ -1,5 +1,7 @@
 pub use sea_orm_migration::prelude::*;
 
+pub mod types;
+
 mod m20260318_233726_group_table;
 mod m20260319_002245_task_table;
 

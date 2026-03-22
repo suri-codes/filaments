@@ -1,5 +1,7 @@
 use sea_orm_migration::{prelude::*, schema::*};
 
+use crate::types::{NANO_ID_LEN, NanoId, Priority};
+
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -12,12 +14,22 @@ impl MigrationTrait for Migration {
                     .table(Group::Table)
                     .if_not_exists()
                     .col(pk_auto(Group::Id))
-                    .col(string(Group::NanoId).unique_key().not_null())
+                    .col(
+                        string(Group::NanoId)
+                            .string_len(NANO_ID_LEN as u32)
+                            .unique_key()
+                            .not_null()
+                            .default(NanoId::default().0),
+                    )
                     .col(string(Group::Name).not_null())
                     //Note: Color is a hex color with the leading #
                     .col(string(Group::Color).not_null())
                     .col(string(Group::DescriptionPath).not_null())
-                    .col(integer(Group::Priority).not_null().default(0))
+                    .col(
+                        string(Group::Priority)
+                            .not_null()
+                            .default(Priority::default().to_string()),
+                    )
                     .col(timestamp(Group::CreatedAt).default(Expr::current_timestamp()))
                     .col(timestamp(Group::ModifiedAt).default(Expr::current_timestamp()))
                     .col(string_null(Group::ParentGroupId))

@@ -1,6 +1,9 @@
 use sea_orm_migration::{prelude::*, schema::*};
 
-use crate::m20260318_233726_group_table::Group;
+use crate::{
+    m20260318_233726_group_table::Group,
+    types::{NANO_ID_LEN, NanoId, Priority},
+};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,14 +17,24 @@ impl MigrationTrait for Migration {
                     .table(Task::Table)
                     .if_not_exists()
                     .col(pk_auto(Task::Id))
-                    .col(string(Task::NanoId).unique_key().not_null())
+                    .col(
+                        string(Task::NanoId)
+                            .string_len(NANO_ID_LEN as u32)
+                            .unique_key()
+                            .not_null()
+                            .default(NanoId::default().0),
+                    )
                     .col(string(Task::Name).not_null())
                     .col(string(Task::DescriptionPath).not_null())
-                    .col(integer(Task::Priority).not_null().default(0))
+                    .col(
+                        string(Task::Priority)
+                            .not_null()
+                            .default(Priority::default().to_string()),
+                    )
                     .col(timestamp(Task::Due).null())
                     .col(timestamp(Task::CreatedAt).default(Expr::current_timestamp()))
                     .col(timestamp(Task::ModifiedAt).default(Expr::current_timestamp()))
-                    .col(string_null(Task::GroupId))
+                    .col(string(Task::GroupId).not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_task_group_id") // unique constraint name
