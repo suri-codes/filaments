@@ -15,6 +15,9 @@ mod errors;
 /// Database entities
 pub mod entity;
 
+/// Types defined in migration
+pub use migration::types::*;
+
 pub use sea_orm::ActiveValue;
 
 #[expect(unused_imports)]
