@@ -4,7 +4,6 @@
 
 use crate::{app::App, cli::Cli};
 use clap::Parser;
-use db::Db;
 
 mod app;
 mod cli;
@@ -23,19 +22,16 @@ async fn main() -> color_eyre::Result<()> {
 
     let args = Cli::parse();
 
-    let _db = Db::connect("/tmp/filaments/test_db.sqlite").await?;
-
     // if there is any subcommand, we want to execute that, otherwise we
     // just run the app
-
     if let Some(command) = args.command {
-        match command {
-            cli::Commands::Test => {}
-        }
-    } else {
-        let mut app = App::new(args.tick_rate, args.frame_rate);
-
-        app.run().await?;
+        return command.process();
     }
+
+    // if no command we run the app
+
+    let mut app = App::new(args.tick_rate, args.frame_rate)?;
+    app.run().await?;
+
     Ok(())
 }

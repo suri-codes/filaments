@@ -47,6 +47,10 @@ repository.workspace = true
 readme.workspace = true
 keywords.workspace = true
 
+[[bin]]
+name = "fil"
+path = "./src/main.rs"
+
 [lints]
 workspace = true
 

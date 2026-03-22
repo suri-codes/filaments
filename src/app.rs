@@ -40,21 +40,21 @@ pub enum Region {
 
 impl App {
     /// Construct a new `App` instance.
-    pub fn new(tick_rate: f64, frame_rate: f64) -> Self {
+    pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
         let (signal_tx, signal_rx) = mpsc::unbounded_channel();
 
-        Self {
+        Ok(Self {
             tick_rate,
             frame_rate,
             components: vec![],
             should_quit: false,
             should_suspend: false,
-            config: Config::new(),
+            config: Config::parse()?,
             region: Region::default(),
             last_tick_key_events: Vec::new(),
             signal_tx,
             signal_rx,
-        }
+        })
     }
 
     pub async fn run(&mut self) -> Result<()> {

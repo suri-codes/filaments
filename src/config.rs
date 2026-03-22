@@ -1,7 +1,15 @@
+use color_eyre::eyre::Context;
 use directories::ProjectDirs;
 use kdl::KdlDocument;
 use serde::Deserialize;
-use std::{env, path::PathBuf, sync::LazyLock};
+use std::{
+    env::{self, home_dir},
+    fmt::Debug,
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+    sync::LazyLock,
+};
 
 use crate::keymap::KeyMap;
 
@@ -29,10 +37,12 @@ const DEFAULT_CONFIG: &str = include_str!("../.config/config.kdl");
 #[derive(Clone, Debug, Deserialize, Default)]
 #[expect(dead_code)]
 pub struct AppConfig {
+    /// The directory where the single instance of the filaments exists.
+    pub filaments: PathBuf,
     #[serde(default)]
-    pub data_dir: PathBuf,
+    pub data: PathBuf,
     #[serde(default)]
-    pub config_dir: PathBuf,
+    pub config: PathBuf,
 }
 
 /// Configuration for the App
@@ -45,25 +55,71 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Self {
-        let default_config: KdlDocument = DEFAULT_CONFIG
+    /// generates a new config with the provided `filaments_dir`
+    pub fn generate(filaments_dir: &Path) -> KdlDocument {
+        let mut default_config: KdlDocument = DEFAULT_CONFIG
             .parse()
             .expect("Default config should always be a valid KDL document.");
 
-        let keymap_node = default_config
-            .get("keymap")
-            .expect("Config::new Keymap must exist in default config.");
+        if let Some(node) = default_config
+            .nodes_mut()
+            .iter_mut()
+            .find(|n| n.name().value() == "filaments_dir")
+            && let Some(entry) = node.entries_mut().get_mut(0)
+        {
+            *entry.value_mut() = kdl::KdlValue::String(filaments_dir.to_string_lossy().to_string());
+            entry.clear_format();
+        }
 
-        let keymap =
-            KeyMap::try_from(keymap_node).expect("default config should always be a valid keymap");
+        default_config
+    }
 
-        Self {
+    /// Parse the config from `~/.config/filametns`
+    ///
+    /// # Errors
+    ///
+    /// Will error if the config doesn't exist or if there
+    /// is a problem parsing it.
+    pub fn parse() -> color_eyre::Result<Self> {
+        let config: KdlDocument = {
+            let file_path = get_config_dir().join("config.kdl");
+
+            let mut file = File::open(file_path).context("Failed to find file!")?;
+
+            let mut str = String::new();
+
+            file.read_to_string(&mut str)
+                .context("Failed to read file!")?;
+
+            str.parse().context("Expected to be valid kdl")?
+        };
+
+        let keymap = KeyMap::try_from(
+            config
+                .get("keymap")
+                .expect("Keymap must exist in the config"),
+        )
+        .context("Keymap is not valid!")?;
+
+        let filaments_dir_str = config
+            .get("filaments_dir")
+            .expect("config should always have this specified")
+            .get(0)
+            .and_then(|arg| arg.as_string())
+            .expect("filaments_dir must be a string");
+
+        let filaments_dir = PathBuf::from(filaments_dir_str)
+            .canonicalize()
+            .context("Filaments directory does not exist!")?;
+
+        Ok(Self {
             app_config: AppConfig {
-                data_dir: get_data_dir(),
-                config_dir: get_config_dir(),
+                filaments: filaments_dir,
+                data: get_data_dir(),
+                config: get_config_dir(),
             },
             keymap,
-        }
+        })
     }
 }
 
@@ -80,13 +136,16 @@ pub fn get_data_dir() -> PathBuf {
 /// Returns the path to the OS-agnostic config directory.
 pub fn get_config_dir() -> PathBuf {
     CONFIG_DIRECTORY.clone().unwrap_or_else(|| {
-        project_directory().map_or_else(
+        home_dir().map_or_else(
             || PathBuf::from(".").join(".config"),
-            |proj_dirs| proj_dirs.config_local_dir().to_path_buf(),
+            |mut path| {
+                path.push(".config");
+                path.push("filaments");
+                path
+            },
         )
     })
 }
-
 fn project_directory() -> Option<ProjectDirs> {
     ProjectDirs::from("com", "suri-codes", env!("CARGO_PKG_NAME"))
 }

@@ -1,4 +1,6 @@
 
+filaments_dir "{INSERT_HERE}"
+
 keymap {
 
     Home {
