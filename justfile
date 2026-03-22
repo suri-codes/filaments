@@ -18,4 +18,4 @@ run:
 
 # Run all tests
 test:
-    cargo test {{_cargo_flags}}
+    cargo test {{_cargo_flags}} --all

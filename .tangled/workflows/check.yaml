@@ -14,7 +14,7 @@ dependencies:
 steps:
     - name: clippy
       command: |
-        cargo clippy -- -D warnings
+        cargo clippy -- -d warnings
     - name: build
       command: |
         just build
