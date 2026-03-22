@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 use crate::config::{get_config_dir, get_data_dir};
 
@@ -12,7 +12,45 @@ pub struct Cli {
     /// Frame rate, i.e. number of frames per second
     #[arg(short, long, value_name = "FLOAT", default_value_t = 60.0)]
     pub frame_rate: f64,
+
+    #[command(subcommand)]
+    pub command: Option<Commands>,
 }
+
+#[derive(Subcommand, Debug)]
+pub enum Commands {
+    /// Manage TARS groups.
+    // #[command(subcommand)]
+    // Group(GroupSubcommand),
+
+    /// Manage TARS tasks.
+    // #[command(subcommand)]
+    // Task(TaskSubcommand),
+
+    /// simple testing stuff
+    Test,
+    // Imports bulk data into TARS
+    // NOTE: By default the importer will fill in fields with
+    // default values if they arent present / aren't able to be
+    // parsed properly
+    // Import(ImportArgs),
+}
+
+// #[derive(Subcommand, Debug)]
+// /// Subcommand to manage tars groups.
+// pub enum GroupSubcommand {
+//     /// Add a group.
+//     Add(GroupAddArgs),
+//     /// List groups.
+//     List(GroupListArgs),
+// }
+
+// #[derive(Debug, Args)]
+// pub struct ExportArgs {
+//     #[arg(short, long, default_value = "./tars.json")]
+//     /// The file-path for data to pe put into.
+//     pub out_file: PathBuf,
+// }
 
 const VERSION_MESSAGE: &str = concat!(
     env!("CARGO_PKG_VERSION"),

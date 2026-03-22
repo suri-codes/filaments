@@ -7,7 +7,7 @@
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1"; # unstable Nixpkgs
 
     fenix = {
-      url = "https://flakehub.com/f/nix-community/fenix/0.1";
+      url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -43,6 +43,29 @@
     {
 
       overlays.default = final: prev: {
+
+        sea-orm-cli = final.rustPlatform.buildRustPackage rec {
+          pname = "sea-orm-cli";
+          version = "2.0.0-rc.37";
+
+          src = final.fetchCrate {
+            inherit pname version;
+
+            sha256 = "sha256-YbP85rVO41S7ZPWSpVz3jICLAEU8H/a2axJBtdFRuWY=";
+
+          };
+
+          cargoHash = "sha256-6lOXyaNxrIfCI3T9nIPR76rhQXvRzSVQUsPRjo5abmI=";
+
+          nativeBuildInputs = [ final.pkg-config ];
+
+          buildInputs = [
+            final.openssl
+          ];
+
+          doCheck = false; # Skip tests to speed up the build
+        };
+
         rustToolchain =
           with inputs.fenix.packages.${prev.stdenv.hostPlatform.system};
           combine (
@@ -73,8 +96,9 @@
               cargo-watch
               rust-analyzer
 
-              typst
-              typstyle
+              sea-orm-cli
+
+              bacon
             ];
 
             # Set any environment variables for your dev shell

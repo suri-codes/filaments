@@ -58,3 +58,5 @@ notes.
 
 So for now let's get a basic notes set up.
 
+
+ok so lets get a seaorm set up
