@@ -2,7 +2,7 @@
 members = [
   "crates/db",
   "crates/db/migration",
-  "crates/sakura"
+  "crates/tree"
 ]
 
 

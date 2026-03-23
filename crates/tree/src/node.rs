@@ -24,7 +24,7 @@ impl<T> Node<T> {
     /// Creates a new `Node` with the provided data
     ///
     /// ```    
-    /// use sakura::Node;
+    /// use tree::Node;
     ///
     /// let _one: Node<i32> = Node::new(1);
     /// ```
@@ -41,7 +41,7 @@ impl<T> Node<T> {
     /// Returns a reference to the data inside the `Node`
     ///
     /// ```
-    /// use sakura::Node;
+    /// use tree::Node;
     ///
     /// let x = 10;
     /// let node: Node<i32> = Node::new(x);
@@ -54,7 +54,7 @@ impl<T> Node<T> {
     /// Returns a mutable reference to the data inside the `Node`
     ///
     /// ```
-    /// use sakura::Node;
+    /// use tree::Node;
     ///
     /// let x = 10;
     /// let mut node: Node<i32> = Node::new(x);
@@ -69,7 +69,7 @@ impl<T> Node<T> {
     /// Returns the data previously in the node
     ///
     /// ```
-    /// use sakura::Node;
+    /// use tree::Node;
     ///
     /// let x = 10;
     /// let mut y = 15;
@@ -89,7 +89,7 @@ impl<T> Node<T> {
     /// Returns the parent of this `Node`, if it has one.
     ///
     /// ```
-    /// use sakura::Node;
+    /// use tree::Node;
     ///
     /// let node: Node<i32> = Node::new(1);
     /// # assert_eq!(node.parent(), None);
@@ -101,7 +101,7 @@ impl<T> Node<T> {
     /// Returns the children of this `Node`
     ///
     /// ```
-    /// use sakura::Node;
+    /// use tree::Node;
     ///
     /// let node: Node<i32> = Node::new(0);
     /// # assert_eq!(node.children().len(), 0);
