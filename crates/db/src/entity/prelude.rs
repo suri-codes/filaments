@@ -2,3 +2,4 @@
 
 pub use super::group::Entity as Group;
 pub use super::task::Entity as Task;
+pub use super::zettel::Entity as Zettel;

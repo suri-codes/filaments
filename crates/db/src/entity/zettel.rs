@@ -3,41 +3,24 @@
 use migration::types::*;
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue::Set;
-use std::future::ready;
+use std::future::{ready, Future};
 use std::pin::Pin;
 
 #[sea_orm::model]
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "task")]
+#[sea_orm(table_name = "zettel")]
+/// What is up!!!
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
     #[sea_orm(unique)]
     pub nano_id: NanoId,
-    pub name: String,
-    pub priority: Priority,
-    pub due: Option<DateTimeUtc>,
-    pub created_at: DateTimeUtc,
-    pub modified_at: DateTimeUtc,
-    #[sea_orm(unique)]
-    pub zettel_id: NanoId,
-    pub group_id: NanoId,
-    #[sea_orm(
-        belongs_to,
-        from = "group_id",
-        to = "nano_id",
-        on_update = "Cascade",
-        on_delete = "Cascade"
-    )]
+    pub title: String,
+    pub file_path: String,
+    #[sea_orm(has_one)]
     pub group: HasOne<super::group::Entity>,
-    #[sea_orm(
-        belongs_to,
-        from = "zettel_id",
-        to = "nano_id",
-        on_update = "Cascade",
-        on_delete = "Cascade"
-    )]
-    pub zettel: HasOne<super::zettel::Entity>,
+    #[sea_orm(has_one)]
+    pub task: HasOne<super::task::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {

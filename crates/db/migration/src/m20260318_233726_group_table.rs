@@ -1,6 +1,9 @@
 use sea_orm_migration::{prelude::*, schema::*};
 
-use crate::types::{NANO_ID_LEN, NanoId, Priority};
+use crate::{
+    m20260323_002518_zettel_table::Zettel,
+    types::{NANO_ID_LEN, Priority},
+};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -18,13 +21,11 @@ impl MigrationTrait for Migration {
                         string(Group::NanoId)
                             .string_len(NANO_ID_LEN as u32)
                             .unique_key()
-                            .not_null()
-                            .default(NanoId::default().0),
+                            .not_null(),
                     )
                     .col(string(Group::Name).not_null())
                     //Note: Color is a hex color with the leading #
                     .col(string(Group::Color).not_null())
-                    .col(string(Group::DescriptionPath).not_null())
                     .col(
                         string(Group::Priority)
                             .not_null()
@@ -32,7 +33,18 @@ impl MigrationTrait for Migration {
                     )
                     .col(timestamp(Group::CreatedAt).default(Expr::current_timestamp()))
                     .col(timestamp(Group::ModifiedAt).default(Expr::current_timestamp()))
+                    .col(string(Group::ZettelId).not_null().unique_key())
+                    // foreign key for the zettel related to this group
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_task_zettel_id")
+                            .from(Group::Table, Group::ZettelId)
+                            .to(Zettel::Table, Zettel::NanoId)
+                            .on_update(ForeignKeyAction::Cascade)
+                            .on_delete(ForeignKeyAction::Cascade),
+                    )
                     .col(string_null(Group::ParentGroupId))
+                    // foreign key for the parent group related to this group
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_group_parent_id") // unique constraint name
@@ -90,9 +102,8 @@ pub enum Group {
     /// Priority level of the group
     Priority,
 
-    /// The relative file path to the location of
-    /// the description note for this task
-    DescriptionPath,
+    /// The Id of the Zettel created for this Group
+    ZettelId,
 
     /// Creation time
     CreatedAt,

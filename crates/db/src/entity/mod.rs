@@ -4,3 +4,4 @@ pub mod prelude;
 
 pub mod group;
 pub mod task;
+pub mod zettel;

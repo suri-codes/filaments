@@ -2,6 +2,9 @@
 
 use migration::types::*;
 use sea_orm::entity::prelude::*;
+use sea_orm::ActiveValue::Set;
+use std::future::ready;
+use std::pin::Pin;
 
 #[sea_orm::model]
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
@@ -13,10 +16,11 @@ pub struct Model {
     pub nano_id: NanoId,
     pub name: String,
     pub color: String,
-    pub description_path: String,
     pub priority: Priority,
     pub created_at: DateTimeUtc,
     pub modified_at: DateTimeUtc,
+    #[sea_orm(unique)]
+    pub zettel_id: NanoId,
     pub parent_group_id: Option<NanoId>,
     #[sea_orm(
         self_ref,
@@ -29,6 +33,30 @@ pub struct Model {
     pub group: HasOne<Entity>,
     #[sea_orm(has_many)]
     pub tasks: HasMany<super::task::Entity>,
+    #[sea_orm(
+        belongs_to,
+        from = "zettel_id",
+        to = "nano_id",
+        on_update = "Cascade",
+        on_delete = "Cascade"
+    )]
+    pub zettel: HasOne<super::zettel::Entity>,
 }
 
-impl ActiveModelBehavior for ActiveModel {}
+impl ActiveModelBehavior for ActiveModel {
+    fn before_save<'life0, 'async_trait, C>(
+        mut self,
+        _db: &'life0 C,
+        insert: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<Self, DbErr>> + Send + 'async_trait>>
+    where
+        C: ConnectionTrait + 'async_trait,
+        Self: Send + 'async_trait,
+        'life0: 'async_trait,
+    {
+        if insert && self.nano_id.is_not_set() {
+            self.nano_id = Set(NanoId::default());
+        }
+        Box::pin(ready(Ok(self)))
+    }
+}
