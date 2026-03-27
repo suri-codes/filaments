@@ -7,7 +7,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use kdl::KdlNode;
 use strum::IntoEnumIterator;
 
-use crate::{app::Region, signal::Signal};
+use crate::tui::{Signal, app::Region};
 
 #[derive(Debug, Clone)]
 pub struct KeyMap(pub HashMap<Region, HashMap<Vec<KeyEvent>, Signal>>);
@@ -173,7 +173,7 @@ mod test {
     use crossterm::event::{KeyEvent, KeyModifiers};
     use kdl::KdlNode;
 
-    use crate::{keymap::KeyMap, signal::Signal};
+    use crate::tui::{KeyMap, Signal, app::Region};
 
     #[test]
     fn test_quit_in_home_region() {
@@ -193,7 +193,7 @@ mod test {
         let keymap: KeyMap = kdl.try_into().expect("Must be a valid keymap");
 
         let map = keymap
-            .get(&crate::app::Region::Home)
+            .get(&Region::Home)
             .expect("Home region must exist in keymap");
 
         let signal = map

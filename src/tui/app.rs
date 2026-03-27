@@ -7,11 +7,11 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::debug;
 
 use crate::{
-    components::Component,
     config::Config,
-    signal::Signal,
     tui::{Event, Tui},
 };
+
+use super::{components::Component, signal::Signal};
 
 pub struct App {
     config: Config,
