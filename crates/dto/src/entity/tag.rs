@@ -6,21 +6,16 @@ use std::{future::ready, pin::Pin};
 
 #[sea_orm::model]
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "zettel")]
-/// What is up!!!
+#[sea_orm(table_name = "tag")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
     #[sea_orm(unique)]
     pub nano_id: NanoId,
-    pub title: String,
-    pub file_path: String,
-    #[sea_orm(has_one)]
-    pub group: HasOne<super::group::Entity>,
-    #[sea_orm(has_one)]
-    pub task: HasOne<super::task::Entity>,
+    pub name: String,
+    pub color: String,
     #[sea_orm(has_many, via = "zettel_tag")]
-    pub tags: HasMany<super::tag::Entity>,
+    pub zettels: HasMany<super::zettel::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {

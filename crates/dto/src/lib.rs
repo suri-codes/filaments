@@ -36,4 +36,11 @@ pub use entity::zettel::ActiveModel as ZettelActiveModel;
 pub use entity::zettel::ActiveModelEx as ZettelActiveModelEx;
 pub use entity::zettel::Entity as ZettelEntity;
 pub use entity::zettel::Model as ZettelModel;
-pub use entity::zettel::Model as ZettelModelEx;
+pub use entity::zettel::ModelEx as ZettelModelEx;
+
+/// Everything related to tag's.
+pub use entity::tag::ActiveModel as TagActiveModel;
+pub use entity::tag::ActiveModelEx as TagActiveModelEx;
+pub use entity::tag::Entity as TagEntity;
+pub use entity::tag::Model as TagModel;
+pub use entity::tag::ModelEx as TagModelEx;

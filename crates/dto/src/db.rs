@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{ops::Deref, path::PathBuf};
 
 use migration::{Migrator, MigratorTrait as _};
 use sea_orm::{Database, DatabaseConnection};
@@ -24,6 +24,13 @@ pub enum DbError {
 
 impl AsRef<DatabaseConnection> for Db {
     fn as_ref(&self) -> &DatabaseConnection {
+        &self.conn
+    }
+}
+
+impl Deref for Db {
+    type Target = DatabaseConnection;
+    fn deref(&self) -> &Self::Target {
         &self.conn
     }
 }

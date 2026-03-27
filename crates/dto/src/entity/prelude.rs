@@ -2,5 +2,7 @@
 #![expect(unused_imports)]
 
 pub use super::group::Entity as Group;
+pub use super::tag::Entity as Tag;
 pub use super::task::Entity as Task;
 pub use super::zettel::Entity as Zettel;
+pub use super::zettel_tag::Entity as ZettelTag;

@@ -26,7 +26,7 @@ dev-db := justfile_directory() + "/target/dev.db"
 dev-db-url := "sqlite:///" + dev-db
 
 # build entities from migrations
-[working-directory:"crates/db"]
+[working-directory:"crates/dto"]
 entity:
     # create the dev db
     rm -f {{dev-db}}

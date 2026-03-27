@@ -51,8 +51,16 @@ impl MigrationTrait for Migration {
 #[derive(DeriveIden)]
 pub enum Zettel {
     Table,
+
+    /// Unique integer id
     Id,
+
+    /// Unique nano-id that is userfacing
     NanoId,
+
+    /// Title of this zettel
     Title,
+
+    /// local file path to this `Zettel`
     FilePath,
 }
