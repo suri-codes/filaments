@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub nano_id: NanoId,
     pub name: String,
-    pub color: String,
+    pub color: Color,
     pub priority: Priority,
     pub created_at: DateTimeUtc,
     pub modified_at: DateTimeUtc,

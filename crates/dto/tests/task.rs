@@ -4,6 +4,7 @@ use dto::{
     ActiveModelTrait as _, ActiveValue::Set, GroupActiveModel, GroupEntity, GroupModel,
     TaskActiveModel, TaskEntity, TaskModel, ZettelActiveModel, ZettelEntity, ZettelModel,
 };
+use migration::types::Color;
 mod common;
 
 #[tokio::test]
@@ -21,7 +22,7 @@ async fn test_group_task_insert() {
 
     let group: GroupModel = GroupActiveModel {
         name: Set("something".to_owned()),
-        color: Set("color".to_owned()),
+        color: Set(Color::new(255, 0, 0)),
         zettel_id: Set(group_zettel.nano_id.clone()),
         ..Default::default()
     }
@@ -69,4 +70,5 @@ async fn test_group_task_insert() {
 
     println!("group: {group:#?}");
     println!("task: {task:#?}");
+    panic!()
 }

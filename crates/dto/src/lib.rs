@@ -15,6 +15,11 @@ pub use migration::types::NanoId;
 /// and add additional functionality to it.
 pub use migration::types::Priority as PriorityDTO;
 
+/// Color type, exporting as DTO because I might
+/// want to newtype wrap this, might not have to, depending
+/// on how I end up using it in the application.
+pub use migration::types::Color as ColorDTO;
+
 mod entity;
 
 /// Everything related to groups.

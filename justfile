@@ -46,6 +46,7 @@ entity:
     # replace elementary types with specific ones
     sed -i 's/pub nano_id: String/pub nano_id: NanoId/g' ./src/entity/*.rs
     sed -i 's/pub priority: String/pub priority: Priority/g' ./src/entity/*.rs
+    sed -i 's/pub color: i64/pub color: Color/g' ./src/entity/*.rs
     
     # replace parent_group_id with proper nano_id
     sed -i 's/pub parent_group_id: Option<String>/pub parent_group_id: Option<NanoId>/g' ./src/entity/*.rs

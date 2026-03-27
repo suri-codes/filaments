@@ -25,7 +25,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(string(Group::Name).not_null())
                     //Note: Color is a hex color with the leading #
-                    .col(string(Group::Color).not_null())
+                    .col(integer(Group::Color).not_null())
                     .col(
                         string(Group::Priority)
                             .not_null()

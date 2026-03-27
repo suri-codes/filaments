@@ -21,7 +21,7 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(string(Tag::Name).not_null())
-                    .col(string(Tag::Color).not_null())
+                    .col(integer(Tag::Color).not_null())
                     .to_owned(),
             )
             .await

@@ -1,6 +1,6 @@
 use dto::{
-    ActiveModelTrait, ActiveValue::Set, TagActiveModel, TagEntity, TagModel, ZettelActiveModel,
-    ZettelEntity, ZettelModel,
+    ActiveModelTrait, ActiveValue::Set, ColorDTO, TagActiveModel, TagEntity, TagModel,
+    ZettelActiveModel, ZettelEntity, ZettelModel,
 };
 use sea_orm::IntoActiveModel;
 
@@ -12,7 +12,7 @@ async fn test_zettel_tag_insert() {
 
     let tag: TagModel = TagActiveModel {
         name: Set("Penis".to_owned()),
-        color: Set("Some Color".to_owned()),
+        color: Set(ColorDTO::new(255, 0, 0)),
         ..Default::default()
     }
     .insert(&*db)
