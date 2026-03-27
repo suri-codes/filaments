@@ -1,27 +1,10 @@
-//! The database abstraction for the different actions `Filaments` requires
-//! from a database service.
+use std::{ops::Deref, path::PathBuf};
 
-use std::path::PathBuf;
-
-use migration::{Migrator, MigratorTrait};
+use migration::{Migrator, MigratorTrait as _};
 use sea_orm::{Database, DatabaseConnection};
 use tracing::debug;
 
-use crate::errors::{DbError, DbResult};
-
-/// Database Errors
-mod errors;
-
-/// Database entities
-pub mod entity;
-
-/// Types defined in migration
-pub use migration::types::*;
-
-pub use sea_orm::ActiveValue;
-
-#[expect(unused_imports)]
-pub use errors::*;
+use thiserror::Error;
 
 /// Database struct
 #[derive(Debug)]
@@ -29,8 +12,25 @@ pub struct Db {
     conn: DatabaseConnection,
 }
 
+pub type DbResult<T> = Result<T, DbError>;
+
+#[derive(Debug, Error)]
+pub enum DbError {
+    #[error("database file not found, tried looking at {not_found_at}")]
+    NotFound { not_found_at: String },
+    #[error("Seaorm Error")]
+    SeaOrm(#[from] sea_orm::error::DbErr),
+}
+
 impl AsRef<DatabaseConnection> for Db {
     fn as_ref(&self) -> &DatabaseConnection {
+        &self.conn
+    }
+}
+
+impl Deref for Db {
+    type Target = DatabaseConnection;
+    fn deref(&self) -> &Self::Target {
         &self.conn
     }
 }

@@ -1,5 +1,5 @@
 [package]
-name = "db"
+name = "dto"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

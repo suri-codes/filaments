@@ -2,6 +2,8 @@ use clap::{Parser, Subcommand};
 
 use crate::config::{get_config_dir, get_data_dir};
 
+mod process;
+
 #[derive(Parser, Debug)]
 #[command(author, version = version(), about)]
 pub struct Cli {
@@ -19,17 +21,25 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Manage TARS groups.
-    // #[command(subcommand)]
-    // Group(GroupSubcommand),
+    // / Manage TARS groups.
+    //  #[command(subcommand)]
+    //  Group(GroupSubcommand),
 
-    /// Manage TARS tasks.
-    // #[command(subcommand)]
-    // Task(TaskSubcommand),
-
-    /// simple testing stuff
-    Test,
-    // Imports bulk data into TARS
+    // / Manage TARS tasks.
+    //  #[command(subcommand)]
+    //  Task(TaskSubcommand),
+    //
+    //
+    /// Initalize Filaments.
+    ///
+    /// This will write a default config to ~/.config/filaments,
+    /// as well as creating a new "notebook" in the current
+    /// directory with the specified name. Note that we currently
+    /// only support one notebook.
+    Init {
+        #[arg(default_value = "ZettelKasten")]
+        name: String,
+    },
     // NOTE: By default the importer will fill in fields with
     // default values if they arent present / aren't able to be
     // parsed properly

@@ -26,7 +26,7 @@ impl<T> TreeBuilder<T> {
     /// Creates a new `TreeBuilder` with default settings.
     ///
     /// ```
-    /// use sakura::TreeBuilder;
+    /// use tree::TreeBuilder;
     ///
     /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new();
     ///
@@ -44,8 +44,8 @@ impl<T> TreeBuilder<T> {
     /// Sets the root `Node` for the resulting `Tree` from this `TreeBuilder`.
     ///
     /// ```
-    /// use sakura::TreeBuilder;
-    /// use sakura::Node;
+    /// use tree::TreeBuilder;
+    /// use tree::Node;
     ///
     /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new().with_root(Node::new(1));
     /// ```
@@ -66,7 +66,7 @@ impl<T> TreeBuilder<T> {
     /// that your `Tree` will **contain** at **any given time**._
     ///
     /// ```
-    /// use sakura::TreeBuilder;
+    /// use tree::TreeBuilder;
     ///
     /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new().with_node_capacity(1);
     ///
@@ -105,7 +105,7 @@ impl<T> TreeBuilder<T> {
     /// The maximum amount of nodes that have been removed at any given time is **3**.
     ///
     /// ```
-    /// use sakura::TreeBuilder;
+    /// use tree::TreeBuilder;
     ///
     /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new().with_node_capacity(1);
     ///
@@ -121,9 +121,9 @@ impl<T> TreeBuilder<T> {
     /// Build a `Tree` based upon the current settings in the `TreeBuilder`.
     ///
     /// ```
-    /// use sakura::TreeBuilder;
-    /// use sakura::Tree;
-    /// use sakura::Node;
+    /// use tree::TreeBuilder;
+    /// use tree::Tree;
+    /// use tree::Node;
     ///
     /// let _tree: Tree<i32> = TreeBuilder::new()
     ///         .with_root(Node::new(5))
@@ -154,7 +154,7 @@ impl<T> TreeBuilder<T> {
 ///
 /// # Panics
 /// Any function that takes a `NodeId` can `panic`, but this should
-/// only happen with improper `NodeId` management within `Sakura`, and
+/// only happen with improper `NodeId` management within `tree`, and
 /// should have nothing to do with library user's code.
 #[derive(Debug, Serialize, Deserialize, Reconcile, Hydrate)]
 pub struct Tree<T> {
@@ -209,7 +209,7 @@ impl<T> Tree<T> {
     /// Creates a new `Tree` with default settings (no root `Node` and no space pre-allocation)
     ///
     /// ```
-    /// use sakura::Tree;
+    /// use tree::Tree;
     ///
     /// let _tree: Tree<i32> = Tree::new();
     /// ```
@@ -231,8 +231,8 @@ impl<T> Tree<T> {
     /// it exists. Otherwise, a `None` is returned.
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(5), AsRoot).unwrap();
@@ -248,8 +248,8 @@ impl<T> Tree<T> {
     /// Returns the maximum height of the `Tree`.
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// # assert_eq!(0, tree.height());
@@ -285,11 +285,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(5), AsRoot).unwrap();
@@ -324,11 +324,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(5), AsRoot).unwrap();
@@ -363,11 +363,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let root_node = Node::new(1);
     /// let child_node = Node::new(2);
@@ -401,13 +401,13 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
-    /// use sakura::RemoveBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
+    /// use tree::RemoveBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -489,7 +489,7 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     #[allow(clippy::needless_pass_by_value)]
     pub fn move_node(
@@ -582,11 +582,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     ///
@@ -644,11 +644,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     ///
@@ -696,11 +696,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -726,12 +726,12 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -758,11 +758,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -787,11 +787,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -816,11 +816,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -851,11 +851,11 @@ impl<T> Tree<T> {
     /// # Panics
     ///
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
-    /// be a bug in `Sakura`
+    /// be a bug in `tree`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -971,7 +971,7 @@ impl<T> Tree<T> {
         assert!(
             idx <= self.nodes.len(),
             "NodeId: {node_id:?} is out of bounds. This is a bug inside
-            Sakura.",
+            tree.",
         );
 
         if self.nodes.get(idx).is_none() {
@@ -1063,9 +1063,9 @@ impl<T: std::fmt::Debug> Tree<T> {
     /// Function can error if something goes wrong during debug!
     ///
     /// ```
-    /// use sakura::Tree;
-    /// use sakura::Node;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::Tree;
+    /// use tree::Node;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree = Tree::<i32>::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -1085,7 +1085,7 @@ impl<T: std::fmt::Debug> Tree<T> {
     /// Writes nothing if the tree is empty.
     ///
     /// ```
-    /// use sakura::Tree;
+    /// use tree::Tree;
     ///
     /// let tree = Tree::<i32>::new();
     /// let mut s = String::new();

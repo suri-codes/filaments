@@ -3,4 +3,7 @@
 pub mod prelude;
 
 pub mod group;
+pub mod tag;
 pub mod task;
+pub mod zettel;
+pub mod zettel_tag;

@@ -2,7 +2,8 @@ use sea_orm_migration::{prelude::*, schema::*};
 
 use crate::{
     m20260318_233726_group_table::Group,
-    types::{NANO_ID_LEN, NanoId, Priority},
+    m20260323_002518_zettel_table::Zettel,
+    types::{NANO_ID_LEN, Priority},
 };
 
 #[derive(DeriveMigrationName)]
@@ -21,11 +22,9 @@ impl MigrationTrait for Migration {
                         string(Task::NanoId)
                             .string_len(NANO_ID_LEN as u32)
                             .unique_key()
-                            .not_null()
-                            .default(NanoId::default().0),
+                            .not_null(),
                     )
                     .col(string(Task::Name).not_null())
-                    .col(string(Task::DescriptionPath).not_null())
                     .col(
                         string(Task::Priority)
                             .not_null()
@@ -34,12 +33,23 @@ impl MigrationTrait for Migration {
                     .col(timestamp(Task::Due).null())
                     .col(timestamp(Task::CreatedAt).default(Expr::current_timestamp()))
                     .col(timestamp(Task::ModifiedAt).default(Expr::current_timestamp()))
-                    .col(string(Task::GroupId).not_null())
+                    .col(string(Task::ZettelId).not_null().unique_key())
+                    // foreign key for the zettel related to this task
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk_task_group_id") // unique constraint name
+                            .name("fk_task_zettel_id")
+                            .from(Task::Table, Task::ZettelId)
+                            .to(Zettel::Table, Zettel::NanoId)
+                            .on_update(ForeignKeyAction::Cascade)
+                            .on_delete(ForeignKeyAction::Cascade),
+                    )
+                    .col(string(Task::GroupId).not_null())
+                    // foreign key for the group related to this task
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_task_group_id")
                             .from(Task::Table, Task::GroupId)
-                            .to(Group::Table, Group::NanoId) // self-referential to the nano-id
+                            .to(Group::Table, Group::NanoId)
                             .on_update(ForeignKeyAction::Cascade)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
@@ -116,9 +126,8 @@ enum Task {
     /// Priority level of the group
     Priority,
 
-    /// The relative file path to the location of
-    /// the description note for this task
-    DescriptionPath,
+    /// The Id of the Zettel created for thi Task
+    ZettelId,
 
     /// The duedate for this task
     Due,

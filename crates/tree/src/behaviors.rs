@@ -8,8 +8,8 @@ pub enum InsertBehavior<'a> {
     /// be set as the first child as the new root `Node`.
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_node = Node::new(1);
@@ -27,8 +27,8 @@ pub enum InsertBehavior<'a> {
     /// `Result` containing the `NodeId` of the child that was added or a `NodeIdError`
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
     ///
     /// let root_node = Node::new(1);
     /// let child_node = Node::new(2);
@@ -52,9 +52,9 @@ pub enum RemoveBehavior {
     ///
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
-    /// use sakura::RemoveBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
+    /// use tree::RemoveBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     ///
@@ -80,9 +80,9 @@ pub enum RemoveBehavior {
     /// If `A` doesn't have a parent, then this behaves exactly like
     /// `RemoveBehavior::OrphanChildren`.
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
-    /// use sakura::RemoveBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
+    /// use tree::RemoveBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     ///
@@ -106,9 +106,9 @@ pub enum RemoveBehavior {
     /// `NodeId`'s.
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
-    /// use sakura::RemoveBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
+    /// use tree::RemoveBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     ///
@@ -135,9 +135,9 @@ pub enum MoveBehavior<'a> {
     /// last child of the new root `Node`.
     ///
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
-    /// use sakura::MoveBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
+    /// use tree::MoveBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     ///
@@ -167,9 +167,9 @@ pub enum MoveBehavior<'a> {
     /// NOTE: During the shift-up part of the above scenario, the `Node` being
     /// shifted up will always be added as the last child of its new parent.
     /// ```
-    /// use sakura::*;
-    /// use sakura::InsertBehavior::*;
-    /// use sakura::MoveBehavior::*;
+    /// use tree::*;
+    /// use tree::InsertBehavior::*;
+    /// use tree::MoveBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     ///
