@@ -15,6 +15,10 @@ pub struct Cli {
     #[arg(short, long, value_name = "FLOAT", default_value_t = 60.0)]
     pub frame_rate: f64,
 
+    /// Open the visualizer along with the tui
+    #[arg(short, long, default_value_t = false)]
+    pub visualizer: bool,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
