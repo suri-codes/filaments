@@ -5,6 +5,7 @@ pub mod types;
 mod m20260318_233726_group_table;
 mod m20260319_002245_task_table;
 mod m20260323_002518_zettel_table;
+mod m20260327_175853_tag_table;
 
 pub struct Migrator;
 
@@ -15,6 +16,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260318_233726_group_table::Migration),
             Box::new(m20260319_002245_task_table::Migration),
             Box::new(m20260323_002518_zettel_table::Migration),
+            Box::new(m20260327_175853_tag_table::Migration),
         ]
     }
 }

@@ -11,27 +11,17 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Zettel::Table)
+                    .table(Tag::Table)
                     .if_not_exists()
-                    .col(pk_auto(Zettel::Id))
+                    .col(pk_auto(Tag::Id))
                     .col(
-                        string(Zettel::NanoId)
+                        string(Tag::NanoId)
                             .string_len(NANO_ID_LEN as u32)
                             .unique_key()
                             .not_null(),
                     )
-                    .col(string(Zettel::Title).not_null())
-                    .col(string(Zettel::FilePath).not_null())
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_index(
-                Index::create()
-                    .name("idx_zettel_pub_id")
-                    .table(Zettel::Table)
-                    .col(Zettel::NanoId)
+                    .col(string(Tag::Name).not_null())
+                    .col(string(Tag::Color).not_null())
                     .to_owned(),
             )
             .await
@@ -39,20 +29,24 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_index(Index::drop().name("idx_zettel_pub_id").to_owned())
-            .await?;
-
-        manager
-            .drop_table(Table::drop().table(Zettel::Table).to_owned())
+            .drop_table(Table::drop().table(Tag::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-pub enum Zettel {
+pub enum Tag {
     Table,
+
+    /// Unique integer id
     Id,
+
+    /// Unique userfacing nano-id
     NanoId,
-    Title,
-    FilePath,
+
+    /// Name of the tag (case sensitive)
+    Name,
+
+    /// Color of this tag
+    Color,
 }
