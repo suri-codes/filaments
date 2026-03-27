@@ -3,7 +3,7 @@ use std::{
     path::PathBuf,
 };
 
-use db::Db;
+use dto::Db;
 use rand::RngExt;
 
 pub async fn fresh_test_db() -> Db {

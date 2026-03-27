@@ -1200,19 +1200,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "db"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "migration",
- "rand 0.10.0",
- "sea-orm",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "deltae"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1364,6 +1351,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
+name = "dto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "migration",
+ "rand 0.10.0",
+ "sea-orm",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "dunce"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1501,8 +1501,8 @@ dependencies = [
  "clap",
  "color-eyre",
  "crossterm",
- "db",
  "directories",
+ "dto",
  "futures",
  "human-panic",
  "kdl",

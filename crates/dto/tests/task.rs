@@ -1,15 +1,16 @@
 //! Testing task functionality with the database abstraction.
 
-use db::entity::{group, prelude::*, zettel};
-use db::{ActiveValue::Set, entity::task};
-use sea_orm::ActiveModelTrait;
+use dto::{
+    ActiveModelTrait as _, ActiveValue::Set, GroupActiveModel, GroupEntity, GroupModel,
+    TaskActiveModel, TaskEntity, TaskModel, ZettelActiveModel, ZettelEntity, ZettelModel,
+};
 mod common;
 
 #[tokio::test]
 async fn test_group_task_insert() {
     let db = common::fresh_test_db().await;
 
-    let group_zettel: zettel::Model = zettel::ActiveModel {
+    let group_zettel: ZettelModel = ZettelActiveModel {
         title: Set("Something".to_owned()),
         file_path: Set("/voo/doo".to_owned()),
         ..Default::default()
@@ -18,7 +19,7 @@ async fn test_group_task_insert() {
     .await
     .unwrap();
 
-    let group: group::Model = group::ActiveModel {
+    let group: GroupModel = GroupActiveModel {
         name: Set("something".to_owned()),
         color: Set("color".to_owned()),
         zettel_id: Set(group_zettel.nano_id.clone()),
@@ -28,7 +29,7 @@ async fn test_group_task_insert() {
     .await
     .unwrap();
 
-    let task_zettel: zettel::Model = zettel::ActiveModel {
+    let task_zettel: ZettelModel = ZettelActiveModel {
         // nano_id: Set(NanoId::default()),
         title: Set("nomething".to_owned()),
         file_path: Set("/voo/doo".to_owned()),
@@ -38,7 +39,7 @@ async fn test_group_task_insert() {
     .await
     .unwrap();
 
-    let task: task::Model = task::ActiveModel {
+    let task: TaskModel = TaskActiveModel {
         name: Set("something".to_owned()),
         group_id: Set(group.nano_id.to_owned()),
         zettel_id: Set(task_zettel.nano_id.clone()),
@@ -48,19 +49,19 @@ async fn test_group_task_insert() {
     .await
     .unwrap();
 
-    let task = Task::load()
+    let task = TaskEntity::load()
         .filter_by_nano_id(task.nano_id.clone())
-        .with(Group)
-        .with(Zettel)
+        .with(GroupEntity)
+        .with(ZettelEntity)
         .one(db.as_ref())
         .await
         .unwrap()
         .unwrap();
 
-    let group = Group::load()
+    let group = GroupEntity::load()
         .filter_by_nano_id(group.nano_id.clone())
-        .with(Task)
-        .with(Zettel)
+        .with(TaskEntity)
+        .with(ZettelEntity)
         .one(db.as_ref())
         .await
         .unwrap()
@@ -68,6 +69,4 @@ async fn test_group_task_insert() {
 
     println!("group: {group:#?}");
     println!("task: {task:#?}");
-
-    panic!()
 }
