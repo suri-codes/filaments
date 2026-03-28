@@ -13,6 +13,7 @@ use clap::Parser;
 mod cli;
 mod gui;
 mod tui;
+mod types;
 
 mod config;
 mod errors;

@@ -17,6 +17,7 @@ pub struct Model {
     pub name: String,
     pub priority: Priority,
     pub due: Option<DateTimeUtc>,
+    pub finished_at: Option<DateTimeUtc>,
     pub created_at: DateTimeUtc,
     pub modified_at: DateTimeUtc,
     #[sea_orm(unique)]
