@@ -18,5 +18,4 @@ mod task;
 pub use task::Task;
 
 mod workspace;
-#[expect(unused_imports)]
 pub use workspace::Workspace;
