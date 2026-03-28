@@ -31,6 +31,7 @@ impl MigrationTrait for Migration {
                             .default(Priority::default().to_string()),
                     )
                     .col(timestamp(Task::Due).null())
+                    .col(timestamp(Task::FinishedAt).null())
                     .col(timestamp(Task::CreatedAt).default(Expr::current_timestamp()))
                     .col(timestamp(Task::ModifiedAt).default(Expr::current_timestamp()))
                     .col(string(Task::ZettelId).not_null().unique_key())
@@ -131,6 +132,9 @@ enum Task {
 
     /// The duedate for this task
     Due,
+
+    /// Completion time
+    FinishedAt,
 
     /// Creation time
     CreatedAt,

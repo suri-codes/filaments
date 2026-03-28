@@ -1,9 +1,9 @@
 //! The DTO's (Data Transfer Objects) used to interact with
 //! the Database. There is also a simple database struct in here.
 
-/// Database and its Errors
-mod db;
-pub use db::*;
+/// For database stuff
+pub use migration::{Migrator, MigratorTrait};
+pub use sea_orm::{Database, DatabaseConnection};
 
 /// exported traits for the database
 pub use sea_orm::ActiveModelTrait;
@@ -14,6 +14,8 @@ pub use migration::types::NanoId;
 /// Exporting this as DTO so we can newtype this in a later crate
 /// and add additional functionality to it.
 pub use migration::types::Priority as PriorityDTO;
+
+pub use sea_orm::entity::prelude::DateTimeUtc;
 
 /// Color type, exporting as DTO because I might
 /// want to newtype wrap this, might not have to, depending
