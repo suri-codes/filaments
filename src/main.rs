@@ -2,10 +2,7 @@
 //! My (suri.codes) personal-knowledge-system, with deeply integrated task tracking and long term goal planning capabilities.
 //!
 
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-};
+use std::{process, sync::Arc};
 
 use crate::{cli::Cli, gui::FilViz, tui::TuiApp};
 use clap::Parser;
@@ -13,6 +10,7 @@ use clap::Parser;
 mod cli;
 mod gui;
 mod tui;
+mod types;
 
 mod config;
 mod errors;
@@ -29,22 +27,22 @@ fn main() -> color_eyre::Result<()> {
 
     // if there are any commands, run those and exit
     if let Some(command) = args.command {
-        return rt.block_on(async { command.process() });
+        return rt.block_on(async { command.process().await });
     }
-
-    let shutdown_signal = Arc::new(AtomicBool::new(false));
 
     // then we spawn the tui on its own thread
     let tui_handle = std::thread::spawn({
+        // arc stuff
         let tui_rt = rt.clone();
-        let shutdown = shutdown_signal.clone();
+
+        // closure to run the tui
         move || -> color_eyre::Result<()> {
             // block the tui on the same runtime as above
             tui_rt.block_on(async {
                 let mut tui = TuiApp::new(args.tick_rate, args.frame_rate)?;
                 tui.run().await?;
-                shutdown.store(true, Ordering::Relaxed);
-                Ok(())
+                // just close everything as soon as the tui is done running
+                process::exit(0);
             })
         }
     });
@@ -53,7 +51,7 @@ fn main() -> color_eyre::Result<()> {
     if args.visualizer {
         // enter the guard so egui_async works properly
         let _rt_guard = rt.enter();
-        FilViz::run(shutdown_signal)?;
+        FilViz::run()?;
     }
 
     // join on the tui

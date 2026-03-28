@@ -9,10 +9,11 @@ use color_eyre::eyre::{Context, Result};
 use crate::{
     cli::Commands,
     config::{Config, get_config_dir},
+    types::Workspace,
 };
 
 impl Commands {
-    pub fn process(self) -> Result<()> {
+    pub async fn process(self) -> Result<()> {
         match self {
             Self::Init { name } => {
                 // create the directory
@@ -20,14 +21,7 @@ impl Commands {
                     .context("Failed to get current directory")?
                     .join(&name);
 
-                // create the .filaments folder
-                let filaments_dir = dir.join(".filaments");
-
-                create_dir_all(&filaments_dir)
-                    .context("Failed to create the filaments directory!")?;
-
-                // create the database inside there
-                File::create(filaments_dir.join("filaments.db"))?;
+                Workspace::initialize(dir.clone()).await?;
 
                 // write config that sets the filaments directory to current dir!
                 let config_kdl = dbg! {Config::generate(&dir)};
