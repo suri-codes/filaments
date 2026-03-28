@@ -3,10 +3,10 @@ use std::{
     path::PathBuf,
 };
 
-use dto::Db;
 use rand::RngExt;
+use sea_orm::{Database, DatabaseConnection};
 
-pub async fn fresh_test_db() -> Db {
+pub async fn fresh_test_db() -> DatabaseConnection {
     let rand_id = {
         let mut rng = rand::rng();
         let mut rand_id = [0_u8; 4];
@@ -15,10 +15,16 @@ pub async fn fresh_test_db() -> Db {
         String::from_utf8(rand_id.to_vec()).unwrap()
     };
 
-    let path = PathBuf::from(format!("/tmp/filaments/test_db_{rand_id}"));
+    let path = PathBuf::from(format!("/tmp/filaments/test_db_{rand_id}.db"));
 
     create_dir_all(path.parent().unwrap()).unwrap();
 
     let _ = File::create(&path).unwrap();
-    Db::connect(&path).await.unwrap()
+
+    let db_conn_string = format!(
+        "sqlite://{}",
+        path.clone().canonicalize().unwrap().to_string_lossy()
+    );
+
+    Database::connect(db_conn_string).await.unwrap()
 }

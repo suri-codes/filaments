@@ -16,7 +16,7 @@ async fn test_group_task_insert() {
         file_path: Set("/voo/doo".to_owned()),
         ..Default::default()
     }
-    .insert(db.as_ref())
+    .insert(&db)
     .await
     .unwrap();
 
@@ -26,7 +26,7 @@ async fn test_group_task_insert() {
         zettel_id: Set(group_zettel.nano_id.clone()),
         ..Default::default()
     }
-    .insert(db.as_ref())
+    .insert(&db)
     .await
     .unwrap();
 
@@ -36,7 +36,7 @@ async fn test_group_task_insert() {
         file_path: Set("/voo/doo".to_owned()),
         ..Default::default()
     }
-    .insert(db.as_ref())
+    .insert(&db)
     .await
     .unwrap();
 
@@ -46,7 +46,7 @@ async fn test_group_task_insert() {
         zettel_id: Set(task_zettel.nano_id.clone()),
         ..Default::default()
     }
-    .insert(db.as_ref())
+    .insert(&db)
     .await
     .unwrap();
 
@@ -54,7 +54,7 @@ async fn test_group_task_insert() {
         .filter_by_nano_id(task.nano_id.clone())
         .with(GroupEntity)
         .with(ZettelEntity)
-        .one(db.as_ref())
+        .one(&db)
         .await
         .unwrap()
         .unwrap();
@@ -63,7 +63,7 @@ async fn test_group_task_insert() {
         .filter_by_nano_id(group.nano_id.clone())
         .with(TaskEntity)
         .with(ZettelEntity)
-        .one(db.as_ref())
+        .one(&db)
         .await
         .unwrap()
         .unwrap();

@@ -1,10 +1,6 @@
 //! The DTO's (Data Transfer Objects) used to interact with
 //! the Database. There is also a simple database struct in here.
 
-/// Database and its Errors
-mod db;
-pub use db::*;
-
 /// For database stuff
 pub use migration::{Migrator, MigratorTrait};
 pub use sea_orm::{Database, DatabaseConnection};
