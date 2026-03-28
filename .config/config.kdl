@@ -7,5 +7,6 @@ keymap {
         q Quit // Quit the application
         <Ctrl-c> Quit // Another way to quit
         <Ctrl-z> Suspend // Suspend the application
+        h Helix
     }
 }

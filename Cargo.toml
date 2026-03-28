@@ -73,6 +73,7 @@ tracing-error = "0.2.1"
 clap = { version = "4.5.60", features = ["derive", "cargo", "wrap_help", "unicode", "string", "unstable-styles"] }
 kdl = "6.5.0"
 dto = {path="./crates/dto"}
+eframe = "0.34.1"
 
 [build-dependencies]
 anyhow = "1.0.102"

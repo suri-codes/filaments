@@ -1,3 +1,5 @@
+use std::{process::Command, thread::spawn};
+
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::layout::Rect;
@@ -7,11 +9,11 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::debug;
 
 use crate::{
-    components::Component,
     config::Config,
-    signal::Signal,
     tui::{Event, Tui},
 };
+
+use super::{components::Component, signal::Signal};
 
 pub struct App {
     config: Config,
@@ -160,6 +162,25 @@ impl App {
                 }
 
                 Signal::Quit => self.should_quit = true,
+
+                Signal::Helix => {
+                    tui.exit()?;
+
+                    let hx = spawn(move || -> Result<()> {
+                        Command::new("hx")
+                            .stdin(std::process::Stdio::inherit())
+                            .stdout(std::process::Stdio::inherit())
+                            .stderr(std::process::Stdio::inherit())
+                            .status()?;
+
+                        Ok(())
+                    });
+
+                    hx.join().unwrap().unwrap();
+
+                    tui.terminal.clear()?;
+                    tui.enter()?;
+                }
 
                 Signal::Suspend => self.should_suspend = true,
 

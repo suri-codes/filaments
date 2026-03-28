@@ -11,7 +11,7 @@ use std::{
     sync::LazyLock,
 };
 
-use crate::keymap::KeyMap;
+use crate::tui::KeyMap;
 
 /// Project Name: Filaments
 pub static PROJECT_NAME: LazyLock<String> =
