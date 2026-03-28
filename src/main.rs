@@ -36,8 +36,11 @@ fn main() -> color_eyre::Result<()> {
 
     // then we spawn the tui on its own thread
     let tui_handle = std::thread::spawn({
+        // arc stuff
         let tui_rt = rt.clone();
         let shutdown = shutdown_signal.clone();
+
+        // closure to run the tui
         move || -> color_eyre::Result<()> {
             // block the tui on the same runtime as above
             tui_rt.block_on(async {
