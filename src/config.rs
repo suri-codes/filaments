@@ -38,7 +38,7 @@ const DEFAULT_CONFIG: &str = include_str!("../.config/config.kdl");
 #[expect(dead_code)]
 pub struct AppConfig {
     /// The directory where the single instance of the filaments exists.
-    pub filaments: PathBuf,
+    pub workspace: PathBuf,
     #[serde(default)]
     pub data: PathBuf,
     #[serde(default)]
@@ -46,7 +46,6 @@ pub struct AppConfig {
 }
 
 /// Configuration for the App
-#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Config {
     pub app_config: AppConfig,
@@ -114,7 +113,7 @@ impl Config {
 
         Ok(Self {
             app_config: AppConfig {
-                filaments: filaments_dir,
+                workspace: filaments_dir,
                 data: get_data_dir(),
                 config: get_config_dir(),
             },

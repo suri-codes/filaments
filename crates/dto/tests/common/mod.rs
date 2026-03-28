@@ -3,6 +3,7 @@ use std::{
     path::PathBuf,
 };
 
+use dto::{Migrator, MigratorTrait};
 use rand::RngExt;
 use sea_orm::{Database, DatabaseConnection};
 
@@ -26,5 +27,10 @@ pub async fn fresh_test_db() -> DatabaseConnection {
         path.clone().canonicalize().unwrap().to_string_lossy()
     );
 
-    Database::connect(db_conn_string).await.unwrap()
+    let conn = Database::connect(db_conn_string).await.unwrap();
+
+    // run da migrations every time we connect, just in case
+    Migrator::up(&conn, None).await.unwrap();
+
+    conn
 }

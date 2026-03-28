@@ -7,9 +7,9 @@ use std::{
 use color_eyre::eyre::{Context, Result};
 
 use crate::{
-    cli::Commands,
+    cli::{Commands, ZettelSubcommand},
     config::{Config, get_config_dir},
-    types::Workspace,
+    types::{Workspace, Zettel},
 };
 
 impl Commands {
@@ -40,6 +40,19 @@ impl Commands {
 
                 // report status!
                 println!("Initialized successfully!");
+            }
+
+            Self::Zettel(zettel_sub_command) => {
+                let conf = Config::parse()?;
+                let ws = Workspace::instansiate(conf.app_config.workspace).await?;
+
+                match zettel_sub_command {
+                    ZettelSubcommand::New { title } => {
+                        let zettel = Zettel::new(title, &ws).await?;
+                        println!("Zettel Created! {zettel:#?}");
+                    }
+                    ZettelSubcommand::List { by_tag: _by_tag } => {}
+                }
             }
         }
 
