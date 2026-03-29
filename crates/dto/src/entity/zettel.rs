@@ -16,6 +16,8 @@ pub struct Model {
     pub nano_id: NanoId,
     pub title: String,
     pub file_path: String,
+    pub created_at: DateTimeUtc,
+    pub modified_at: DateTimeUtc,
     #[sea_orm(has_one)]
     pub group: HasOne<super::group::Entity>,
     #[sea_orm(has_one)]
