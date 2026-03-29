@@ -1,4 +1,4 @@
-use dto::{DateTimeUtc, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx};
+use dto::{DateTime, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx};
 use std::path::PathBuf;
 
 use color_eyre::eyre::Result;
@@ -19,7 +19,7 @@ pub struct Zettel {
     pub title: String,
     /// a workspace-local file path, needs to be canonicalized before usage
     pub file_path: PathBuf,
-    pub created_at: DateTimeUtc,
+    pub created_at: DateTime,
     pub tags: Vec<Tag>,
 }
 
@@ -54,7 +54,7 @@ impl Zettel {
 
         let front_matter = FrontMatter::new(
             title,
-            zettel.created_at.naive_local(),
+            zettel.created_at,
             zettel.tags.iter().map(|t| t.name.clone()).collect(),
         );
 

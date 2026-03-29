@@ -22,8 +22,8 @@ impl MigrationTrait for Migration {
                     )
                     .col(string(Zettel::Title).not_null())
                     .col(string(Zettel::FilePath).not_null())
-                    .col(timestamp(Zettel::CreatedAt).default(Expr::current_timestamp()))
-                    .col(timestamp(Zettel::ModifiedAt).default(Expr::current_timestamp()))
+                    .col(date_time(Zettel::CreatedAt).default(Expr::current_timestamp()))
+                    .col(date_time(Zettel::ModifiedAt).default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;

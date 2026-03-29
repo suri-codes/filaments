@@ -1,23 +1,25 @@
 use std::{fmt::Display, path::Path};
 
-use chrono::{NaiveDateTime, format::StrftimeItems};
+// use chrono::format::StrftimeItems;
 use color_eyre::eyre::{Result, eyre};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
+
+use dto::DateTime;
 
 const DATE_FMT_STR: &str = "%Y-%m-%d %I:%M:%S %p";
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
 pub struct FrontMatter {
     pub title: String,
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime,
     pub tag_strings: Vec<String>,
 }
 
 impl FrontMatter {
     pub fn new(
         title: impl Into<String>,
-        created_at: NaiveDateTime,
+        created_at: DateTime,
         tag_strings: Vec<impl Into<String>>,
     ) -> Self {
         let tag_strings = tag_strings.into_iter().map(Into::into).collect();
@@ -85,7 +87,7 @@ impl FrontMatter {
             .ok_or_else(|| eyre!("Date line doesn't exist!".to_owned()))?
             .strip_prefix("Date: ")
             .ok_or_else(|| eyre!("Date line doesn't start with \"Date: \" ".to_owned(),))
-            .map(|date_str| NaiveDateTime::parse_from_str(date_str, DATE_FMT_STR))?
+            .map(|date_str| DateTime::parse_from_str(date_str, DATE_FMT_STR))?
             .map_err(|err| eyre!(err.to_string()))?;
 
         let tag_strings: Vec<String> = lines
@@ -107,14 +109,9 @@ impl FrontMatter {
 
 impl Display for FrontMatter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let date_fmt_items = StrftimeItems::new(DATE_FMT_STR);
         writeln!(f, "---")?;
         writeln!(f, "Title: {}", self.title)?;
-        writeln!(
-            f,
-            "Date: {}",
-            self.created_at.format_with_items(date_fmt_items)
-        )?;
+        writeln!(f, "Date: {}", self.created_at.format(DATE_FMT_STR))?;
         write!(f, "Tags: ")?;
 
         for tag in &self.tag_strings {
@@ -128,7 +125,7 @@ impl Display for FrontMatter {
 #[cfg(test)]
 mod tests {
 
-    use chrono::NaiveDateTime;
+    use dto::DateTime;
 
     use crate::types::{FrontMatter, frontmatter::DATE_FMT_STR};
 
@@ -146,7 +143,7 @@ Tags: whoa barber
             (
                 FrontMatter::new(
                     "LOL",
-                    NaiveDateTime::parse_from_str("2025-01-01 12:50:19 AM", DATE_FMT_STR).unwrap(),
+                    DateTime::parse_from_str("2025-01-01 12:50:19 AM", DATE_FMT_STR).unwrap(),
                     vec!["whoa", "barber"],
                 ),
                 "",

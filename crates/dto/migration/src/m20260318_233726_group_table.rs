@@ -31,8 +31,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(Priority::default().to_string()),
                     )
-                    .col(timestamp(Group::CreatedAt).default(Expr::current_timestamp()))
-                    .col(timestamp(Group::ModifiedAt).default(Expr::current_timestamp()))
+                    .col(date_time(Group::CreatedAt).default(Expr::current_timestamp()))
+                    .col(date_time(Group::ModifiedAt).default(Expr::current_timestamp()))
                     .col(string(Group::ZettelId).not_null().unique_key())
                     // foreign key for the zettel related to this group
                     .foreign_key(

@@ -1,4 +1,4 @@
-use dto::{DateTimeUtc, GroupModelEx, NanoId};
+use dto::{DateTime, GroupModelEx, NanoId};
 
 use crate::types::{Color, Priority, Zettel};
 
@@ -13,8 +13,8 @@ pub struct Group {
     pub name: String,
     pub color: Color,
     pub priority: Priority,
-    pub created_at: DateTimeUtc,
-    pub modified_at: DateTimeUtc,
+    pub created_at: DateTime,
+    pub modified_at: DateTime,
     /// The `Zettel` that is related to this `Group`.
     /// Can store notes regarding this group in
     /// the `Zettel`

@@ -1,4 +1,4 @@
-use dto::{DateTimeUtc, NanoId, TaskModelEx};
+use dto::{ DateTime, NanoId, TaskModelEx};
 
 use crate::types::{Group, Priority, Zettel};
 
@@ -12,10 +12,10 @@ pub struct Task {
     pub id: NanoId,
     pub name: String,
     pub priority: Priority,
-    pub due: Option<DateTimeUtc>,
-    pub finished_at: Option<DateTimeUtc>,
-    pub created_at: DateTimeUtc,
-    pub modified_at: DateTimeUtc,
+    pub due: Option<DateTime>,
+    pub finished_at: Option<DateTime>,
+    pub created_at: DateTime,
+    pub modified_at: DateTime,
     /// Each task has its own related `Zettel`.
     pub zettel: Zettel,
     pub group: Group,

@@ -15,7 +15,7 @@ pub use migration::types::NanoId;
 /// and add additional functionality to it.
 pub use migration::types::Priority as PriorityDTO;
 
-pub use sea_orm::entity::prelude::DateTimeUtc;
+pub use sea_orm::entity::prelude::DateTime;
 
 /// Color type, exporting as DTO because I might
 /// want to newtype wrap this, might not have to, depending
