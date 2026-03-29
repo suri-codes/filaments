@@ -95,6 +95,7 @@
               cargo-edit
               cargo-watch
               cargo-nextest
+
               rust-analyzer
 
               sea-orm-cli

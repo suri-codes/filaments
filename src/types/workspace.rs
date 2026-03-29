@@ -85,7 +85,7 @@ mod tests {
         let path = PathBuf::from("/tmp/filaments/.filaments/filaments.db");
         create_dir_all(path.parent().unwrap()).unwrap();
         let _ = File::create(&path).unwrap();
-        let _k = Workspace::instansiate(dbg!(&path.parent().unwrap().parent().unwrap()))
+        let _ws = Workspace::instansiate(&path.parent().unwrap().parent().unwrap())
             .await
             .unwrap();
     }

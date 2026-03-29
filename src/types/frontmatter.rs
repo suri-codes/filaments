@@ -2,10 +2,13 @@ use std::{fmt::Display, path::Path};
 
 // use chrono::format::StrftimeItems;
 use color_eyre::eyre::{Result, eyre};
+use egui_graphs::Node;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
 use dto::DateTime;
+
+use crate::types::{Link, Zettel};
 
 const DATE_FMT_STR: &str = "%Y-%m-%d %I:%M:%S %p";
 
@@ -29,6 +32,14 @@ impl FrontMatter {
             created_at,
             tag_strings,
         }
+    }
+
+    /// Apply the features of `FrontMatter` onto a
+    /// `Node`
+    pub fn apply_node_transform(&self, node: &mut Node<Zettel, Link>) {
+        node.set_label(self.title.clone());
+        let disp = node.display_mut();
+        disp.radius = 100.0;
     }
 
     /// Reads in file and returns the front matter as well as the content after it.

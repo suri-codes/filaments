@@ -4,7 +4,9 @@ use nanoid::nanoid;
 use sea_orm::DeriveValueType;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, DeriveValueType)]
+#[derive(
+    Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, DeriveValueType,
+)]
 #[sea_orm(value_type = "String")]
 pub struct NanoId(pub(crate) String);
 

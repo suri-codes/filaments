@@ -3,18 +3,19 @@ use dto::{
     QueryFilter, TagActiveModel, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx,
     ZettelTagActiveModel, ZettelTagColumns, ZettelTagEntity,
 };
+use pulldown_cmark::{Event, Parser, Tag as MkTag};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
     path::{Path, PathBuf},
 };
-use tracing::info;
+use tracing::{error, info};
 
 use color_eyre::eyre::{Error, Result, eyre};
 use dto::NanoId;
 use tokio::{fs::File, io::AsyncWriteExt};
 
-use crate::types::{FrontMatter, Tag, Workspace};
+use crate::types::{FrontMatter, Link, Tag, Workspace};
 
 /// A `Zettel` is a note about a single idea.
 /// It can have many `Tag`s, just meaning it can fall under many
@@ -35,7 +36,7 @@ pub struct Zettel {
 /// A `ZettelId` is essentially a `NanoId`,
 /// with some `Zettel` specific helpers written
 /// onto it
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ZettelId(NanoId);
 
 impl Zettel {
@@ -80,7 +81,6 @@ impl Zettel {
 
     /// Returns the most up-to-date `FrontMatter` for this
     /// `Zettel`
-    #[expect(dead_code)]
     pub async fn front_matter(&self, ws: &Workspace) -> Result<FrontMatter> {
         let path = self.absolute_path(ws);
         let (fm, _) = FrontMatter::extract_from_file(path).await?;
@@ -89,7 +89,6 @@ impl Zettel {
 
     /// Returns the content of this `Zettel`, which is everything
     /// but the `FrontMatter`
-    #[expect(dead_code)]
     pub async fn content(&self, ws: &Workspace) -> Result<String> {
         let path = self.absolute_path(ws);
         let (_, content) = FrontMatter::extract_from_file(path).await?;
@@ -107,6 +106,7 @@ impl Zettel {
     }
 
     /// uses the id and root to parse out of the root directory
+    #[expect(dead_code)]
     pub async fn from_id(id: &ZettelId, ws: &Workspace) -> Result<Self> {
         let mut path = ws.root.clone();
         path.push(id.0.to_string());
@@ -125,13 +125,13 @@ impl Zettel {
         zettel_tag_strings.sort();
 
         // get the zettel from the db
-        let db_zettel: ZettelModelEx = if let Some(z) = ZettelEntity::load()
+        let db_zettel: ZettelModelEx = if let Some(existing_zettel) = ZettelEntity::load()
             .with(TagEntity)
             .filter_by_nano_id(id.clone())
             .one(&ws.db)
             .await?
         {
-            z
+            existing_zettel
         } else {
             // if zettel is missing from db, we just add it here
             info!("adding zettel to db");
@@ -159,14 +159,14 @@ impl Zettel {
             } else {
                 // the db says the file has tag `x`, but that tag is missing from the
                 // front matter, we can assume its gone, lets delete that link
-                let x = ZettelTagEntity::find()
+                let to_remove = ZettelTagEntity::find()
                     .filter(ZettelTagColumns::ZettelNanoId.eq(id.0.clone()))
                     .filter(ZettelTagColumns::TagNanoId.eq(db_tag.nano_id))
                     .one(&ws.db)
                     .await?
                     .expect("this link must exist");
 
-                x.into_active_model().delete(&ws.db).await?;
+                to_remove.into_active_model().delete(&ws.db).await?;
             }
         }
 
@@ -209,58 +209,54 @@ impl Zettel {
             .into())
     }
 
-    // pub fn apply_node_transform(&self, node: &mut Node<Zettel, Link>) {
-    //     node.set_label(self.front_matter.title.to_owned());
-    //     let disp = node.display_mut();
-    //     disp.radius = 100.0;
-    // }
+    /// The `Link`s that are going out of this `Zettel`
+    pub async fn links(&self, ws: &Workspace) -> Result<Vec<Link>> {
+        let content = self.content(ws).await?;
+        let parsed = Parser::new(&content);
 
-    // fn links_from_content(src_id: &ZettelId, content: &str, ws: &Workspace) -> ZkResult<Vec<Link>> {
-    //     let parsed = Parser::new(content);
+        let mut links = vec![];
 
-    //     let mut links = vec![];
+        for event in parsed {
+            if let Event::Start(MkTag::Link { dest_url, .. }) = event {
+                info!("Found dest_url: {dest_url:#?}");
 
-    //     for event in parsed {
-    //         if let Event::Start(MkTag::Link { dest_url, .. }) = event {
-    //             info!("Found dest_url: {dest_url:#?}");
+                let dest_path = {
+                    // remove leading "./"
+                    let without_prefix = dest_url.strip_prefix("./").unwrap_or(&dest_url);
 
-    //             let dest_path = {
-    //                 // remove leading "./"
-    //                 let without_prefix = dest_url.strip_prefix("./").unwrap_or(&dest_url);
+                    // remove "#" and everything after it
+                    let without_anchor = without_prefix.split('#').next().unwrap();
 
-    //                 // remove "#" and everything after it
-    //                 let without_anchor = without_prefix.split('#').next().unwrap();
+                    // add .md if not present
+                    let normalized = if std::path::Path::new(without_anchor)
+                        .extension()
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+                    {
+                        without_anchor.to_string()
+                    } else {
+                        format!("{without_anchor}.md")
+                    };
 
-    //                 // add .md if not present
-    //                 let normalized = if without_anchor.ends_with(".md") {
-    //                     without_anchor.to_string()
-    //                 } else {
-    //                     format!("{}.md", without_anchor)
-    //                 };
+                    let mut tmp_root = ws.root.clone();
+                    tmp_root.push(normalized);
+                    tmp_root
+                };
+                // simplest way to validate that the path exists
+                let Ok(canon_url) = dest_path.canonicalize() else {
+                    error!("Link not found!: {dest_path:?}");
+                    continue;
+                };
 
-    //                 let mut tmp_root = ws.root.clone();
-    //                 tmp_root.push(normalized);
-    //                 tmp_root
-    //             };
-    //             // simplest way to validate that the path exists
-    //             let canon_url = match dest_path.canonicalize() {
-    //                 Ok(canon_url) => canon_url,
-    //                 Err(_) => {
-    //                     error!("Link not found!: {dest_path:?}");
-    //                     continue;
-    //                 }
-    //             };
+                let dst_id = ZettelId::try_from(canon_url)?;
 
-    //             let dst_id = ZettelId::try_from(canon_url)?;
+                let link = Link::new(self.id.clone(), dst_id);
 
-    //             let link = Link::new(src_id, dst_id);
+                links.push(link);
+            }
+        }
 
-    //             links.push(link)
-    //         }
-    //     }
-
-    //     Ok(links)
-    // }
+        Ok(links)
+    }
 }
 
 impl From<ZettelModelEx> for Zettel {
