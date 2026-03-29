@@ -1,3 +1,5 @@
+use std::str::FromStr as _;
+
 use nanoid::nanoid;
 use sea_orm::DeriveValueType;
 
@@ -42,5 +44,11 @@ impl std::str::FromStr for NanoId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.to_owned()))
+    }
+}
+
+impl From<&str> for NanoId {
+    fn from(value: &str) -> Self {
+        NanoId::from_str(value).unwrap()
     }
 }

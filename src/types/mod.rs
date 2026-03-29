@@ -9,6 +9,7 @@ pub use priority::Priority;
 
 mod zettel;
 pub use zettel::Zettel;
+// pub use zettel::ZettelId;
 
 mod group;
 pub use group::Group;
