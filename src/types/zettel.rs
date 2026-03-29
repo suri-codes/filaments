@@ -1,4 +1,5 @@
 use dto::{DateTime, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx};
+use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
     path::{Path, PathBuf},
@@ -29,7 +30,7 @@ pub struct Zettel {
 /// A `ZettelId` is essentially a `NanoId`,
 /// with some `Zettel` specific helpers written
 /// onto it
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ZettelId(NanoId);
 
 impl Zettel {

@@ -2,8 +2,9 @@ use std::str::FromStr as _;
 
 use nanoid::nanoid;
 use sea_orm::DeriveValueType;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveValueType)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, DeriveValueType)]
 #[sea_orm(value_type = "String")]
 pub struct NanoId(pub(crate) String);
 

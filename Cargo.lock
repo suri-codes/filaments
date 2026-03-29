@@ -4322,6 +4322,7 @@ dependencies = [
  "rgb",
  "sea-orm",
  "sea-orm-migration",
+ "serde",
 ]
 
 [[package]]
