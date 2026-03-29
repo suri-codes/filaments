@@ -10,7 +10,7 @@ use tracing::debug;
 
 use crate::{
     config::Config,
-    tui::{Event, Tui},
+    tui::{Event, Tui, components::Zk},
 };
 
 use super::{components::Component, signal::Signal};
@@ -38,6 +38,7 @@ pub struct App {
 pub enum Region {
     #[default]
     Home,
+    Zk,
 }
 
 impl App {
@@ -48,7 +49,7 @@ impl App {
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![],
+            components: vec![Box::new(Zk::new())],
             should_quit: false,
             should_suspend: false,
             config: Config::parse()?,
@@ -80,7 +81,7 @@ impl App {
 
         loop {
             self.handle_events(&mut tui).await?;
-            self.handle_signals(&mut tui)?;
+            self.handle_signals(&mut tui).await?;
             if self.should_suspend {
                 tui.suspend()?;
 
@@ -150,7 +151,7 @@ impl App {
         Ok(())
     }
 
-    fn handle_signals(&mut self, tui: &mut Tui) -> Result<()> {
+    async fn handle_signals(&mut self, tui: &mut Tui) -> Result<()> {
         while let Ok(signal) = self.signal_rx.try_recv() {
             if signal != Signal::Tick && signal != Signal::Render {
                 debug!("handling signal: {signal:?}");
@@ -193,7 +194,7 @@ impl App {
             }
 
             for component in &mut self.components {
-                if let Some(signal) = component.update(signal.clone())? {
+                if let Some(signal) = component.update(signal.clone()).await? {
                     self.signal_tx.send(signal)?;
                 }
             }

@@ -65,7 +65,7 @@ pub enum ZettelSubcommand {
     },
     /// List groups.
     List {
-        /// The file-path for data to pe put into.
+        /// Filter by tag
         #[arg(short = 't', long)]
         by_tag: String,
     },
