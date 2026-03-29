@@ -30,10 +30,10 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(Priority::default().to_string()),
                     )
-                    .col(timestamp(Task::Due).null())
-                    .col(timestamp(Task::FinishedAt).null())
-                    .col(timestamp(Task::CreatedAt).default(Expr::current_timestamp()))
-                    .col(timestamp(Task::ModifiedAt).default(Expr::current_timestamp()))
+                    .col(date_time(Task::Due).null())
+                    .col(date_time(Task::FinishedAt).null())
+                    .col(date_time(Task::CreatedAt).default(Expr::current_timestamp()))
+                    .col(date_time(Task::ModifiedAt).default(Expr::current_timestamp()))
                     .col(string(Task::ZettelId).not_null().unique_key())
                     // foreign key for the zettel related to this task
                     .foreign_key(

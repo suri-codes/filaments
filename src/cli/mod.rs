@@ -25,6 +25,10 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    /// Manage `Zettel`s
+    #[command(subcommand)]
+    Zettel(ZettelSubcommand),
+
     // / Manage TARS groups.
     //  #[command(subcommand)]
     //  Group(GroupSubcommand),
@@ -50,6 +54,23 @@ pub enum Commands {
     // Import(ImportArgs),
 }
 
+#[derive(Subcommand, Debug)]
+/// Subcommand to manage tars groups.
+pub enum ZettelSubcommand {
+    /// Add a group.
+    New {
+        #[arg(short, long)]
+        /// The file-path for data to pe put into.
+        title: String,
+    },
+    /// List groups.
+    List {
+        /// Filter by tag
+        #[arg(short = 't', long)]
+        by_tag: String,
+    },
+}
+
 // #[derive(Subcommand, Debug)]
 // /// Subcommand to manage tars groups.
 // pub enum GroupSubcommand {
@@ -65,6 +86,7 @@ pub enum Commands {
 //     /// The file-path for data to pe put into.
 //     pub out_file: PathBuf,
 // }
+//
 
 const VERSION_MESSAGE: &str = concat!(
     env!("CARGO_PKG_VERSION"),

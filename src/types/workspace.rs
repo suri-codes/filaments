@@ -1,12 +1,11 @@
 use std::path::PathBuf;
 
 use color_eyre::eyre::{Context, Result};
-use dto::{Database, DatabaseConnection};
+use dto::{Database, DatabaseConnection, Migrator, MigratorTrait};
 use tokio::fs::{File, create_dir_all};
 use tracing::debug;
 
 /// The `Workspace` in which the filaments exist.
-#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Workspace {
     /// Private field so it can only be instantiated from a `Path`
@@ -39,6 +38,9 @@ impl Workspace {
         let conn = Database::connect(db_conn_string)
             .await
             .context("Failed to connect to the database in the filaments workspace!")?;
+
+        // run da migrations every time we connect, just in case
+        Migrator::up(&conn, None).await?;
 
         Ok(Self {
             _private: (),

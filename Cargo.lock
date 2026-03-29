@@ -2240,6 +2240,7 @@ name = "filaments"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "better-panic",
  "clap",
  "color-eyre",

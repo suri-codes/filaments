@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     Frame,
@@ -10,11 +11,18 @@ use crate::{
     tui::{Event, Signal},
 };
 
+/// The zk component
+mod zk;
+
+pub use zk::*;
+
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 ///
 /// Implementers of this trait can be registered with the main application loop and will be able to
 /// receive events, update state, and be rendered on the screen.
-pub trait Component: Send {
+///
+#[async_trait]
+pub trait Component: Send + Sync {
     /// Register a signal handler that can send signals for processing if necessary.
     ///
     /// # Arguments
@@ -106,7 +114,7 @@ pub trait Component: Send {
     /// # Returns
     ///
     /// * [`color_eyre::Result<Option<signal>>`] - A signal to be processed or none.
-    fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>>;
+    async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>>;
 
     /// Render the component on the screen. (REQUIRED)
     ///

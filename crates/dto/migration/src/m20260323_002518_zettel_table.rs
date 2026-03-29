@@ -22,6 +22,8 @@ impl MigrationTrait for Migration {
                     )
                     .col(string(Zettel::Title).not_null())
                     .col(string(Zettel::FilePath).not_null())
+                    .col(date_time(Zettel::CreatedAt).default(Expr::current_timestamp()))
+                    .col(date_time(Zettel::ModifiedAt).default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -63,4 +65,10 @@ pub enum Zettel {
 
     /// local file path to this `Zettel`
     FilePath,
+
+    /// Creation time
+    CreatedAt,
+
+    /// Last modified
+    ModifiedAt,
 }
