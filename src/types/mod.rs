@@ -20,5 +20,8 @@ pub use task::Task;
 mod workspace;
 pub use workspace::Workspace;
 
+mod kasten;
+pub use kasten::Kasten;
+
 mod frontmatter;
 pub use frontmatter::FrontMatter;
