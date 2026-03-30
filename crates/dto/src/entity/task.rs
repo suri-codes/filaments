@@ -2,8 +2,8 @@
 
 use migration::prelude::Local;
 use migration::types::*;
-use sea_orm::ActiveValue::Set;
 use sea_orm::entity::prelude::*;
+use sea_orm::ActiveValue::Set;
 use std::future::ready;
 use std::pin::Pin;
 
@@ -54,15 +54,10 @@ impl ActiveModelBehavior for ActiveModel {
         'life0: 'async_trait,
     {
         let now = Local::now().naive_local();
-
-        // set modified at
         self.modified_at = Set(now);
-
-        // we set the timestamp to non-utc
         if insert && self.created_at.is_not_set() {
             self.created_at = Set(now);
         }
-
         if insert && self.nano_id.is_not_set() {
             self.nano_id = Set(NanoId::default());
         }

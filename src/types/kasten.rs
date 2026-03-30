@@ -6,6 +6,7 @@ use crate::types::Workspace;
 
 /// The `Kasten` that stores the `Link`s between `Zettel`s
 #[derive(Debug, Clone)]
+#[expect(dead_code)]
 pub struct Kasten {
     /// Private field so it can only be instantiated from a `Path`
     _private: (),

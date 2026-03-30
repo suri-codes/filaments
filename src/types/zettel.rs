@@ -1,9 +1,14 @@
-use dto::{DateTime, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx};
+use dto::{
+    ActiveModelTrait, ActiveValue, ColumnTrait, DateTime, EntityTrait as _, IntoActiveModel,
+    QueryFilter, TagActiveModel, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx,
+    ZettelTagActiveModel, ZettelTagColumns, ZettelTagEntity,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
     path::{Path, PathBuf},
 };
+use tracing::info;
 
 use color_eyre::eyre::{Error, Result, eyre};
 use dto::NanoId;
@@ -100,6 +105,162 @@ impl Zettel {
     fn absolute_path(&self, ws: &Workspace) -> PathBuf {
         ws.root.clone().join(&self.file_path)
     }
+
+    /// uses the id and root to parse out of the root directory
+    pub async fn from_id(id: &ZettelId, ws: &Workspace) -> Result<Self> {
+        let mut path = ws.root.clone();
+        path.push(id.0.to_string());
+        Self::from_path(path, ws).await
+    }
+
+    pub async fn from_path(path: impl Into<PathBuf>, ws: &Workspace) -> Result<Self> {
+        let path: PathBuf = path.into();
+
+        let id = ZettelId::try_from(path.as_path())?;
+
+        let (front_matter, _) = FrontMatter::extract_from_file(&ws.root.clone().join(path)).await?;
+
+        let mut zettel_tag_strings = front_matter.tag_strings.clone();
+
+        zettel_tag_strings.sort();
+
+        // get the zettel from the db
+        let db_zettel: ZettelModelEx = if let Some(z) = ZettelEntity::load()
+            .with(TagEntity)
+            .filter_by_nano_id(id.clone())
+            .one(&ws.db)
+            .await?
+        {
+            z
+        } else {
+            // if zettel is missing from db, we just add it here
+            info!("adding zettel to db");
+            let am = ZettelActiveModel {
+                nano_id: ActiveValue::Set(id.clone().into()),
+                title: ActiveValue::Set(front_matter.title.clone()),
+                ..Default::default()
+            };
+
+            am.insert(&ws.db).await?;
+
+            ZettelEntity::load()
+                .with(TagEntity)
+                .filter_by_nano_id(id.clone())
+                .one(&ws.db)
+                .await?
+                .expect("we just inserted the zettel")
+        };
+
+        // get the tags for it
+        for db_tag in db_zettel.tags {
+            if let Ok(idx) = zettel_tag_strings.binary_search(&db_tag.name) {
+                // we remove tags we have already processed
+                zettel_tag_strings.remove(idx);
+            } else {
+                // the db says the file has tag `x`, but that tag is missing from the
+                // front matter, we can assume its gone, lets delete that link
+                let x = ZettelTagEntity::find()
+                    .filter(ZettelTagColumns::ZettelNanoId.eq(id.0.clone()))
+                    .filter(ZettelTagColumns::TagNanoId.eq(db_tag.nano_id))
+                    .one(&ws.db)
+                    .await?
+                    .expect("this link must exist");
+
+                x.into_active_model().delete(&ws.db).await?;
+            }
+        }
+
+        // now any tags that are left inside zettel_tag_strings,
+        // we have to put them inside the db
+        for new_tag in zettel_tag_strings {
+            // create a new tag
+            let tag = TagActiveModel {
+                name: ActiveValue::Set(new_tag),
+                ..Default::default()
+            }
+            .insert(&ws.db)
+            .await?;
+
+            // this zettel has this tag now
+            let _ = ZettelTagActiveModel {
+                zettel_nano_id: ActiveValue::Set(id.to_string()),
+                tag_nano_id: ActiveValue::Set(tag.nano_id.to_string()),
+            }
+            .insert(&ws.db)
+            .await?;
+        }
+
+        if front_matter.title != db_zettel.title {
+            let am = ZettelActiveModel {
+                id: ActiveValue::Unchanged(db_zettel.id),
+                title: ActiveValue::Set(front_matter.title.clone()),
+                ..Default::default()
+            };
+
+            am.update(&ws.db).await?;
+        }
+
+        Ok(ZettelEntity::load()
+            .with(TagEntity)
+            .filter_by_nano_id(id.clone())
+            .one(&ws.db)
+            .await?
+            .expect("We just inserted it right above")
+            .into())
+    }
+
+    // pub fn apply_node_transform(&self, node: &mut Node<Zettel, Link>) {
+    //     node.set_label(self.front_matter.title.to_owned());
+    //     let disp = node.display_mut();
+    //     disp.radius = 100.0;
+    // }
+
+    // fn links_from_content(src_id: &ZettelId, content: &str, ws: &Workspace) -> ZkResult<Vec<Link>> {
+    //     let parsed = Parser::new(content);
+
+    //     let mut links = vec![];
+
+    //     for event in parsed {
+    //         if let Event::Start(MkTag::Link { dest_url, .. }) = event {
+    //             info!("Found dest_url: {dest_url:#?}");
+
+    //             let dest_path = {
+    //                 // remove leading "./"
+    //                 let without_prefix = dest_url.strip_prefix("./").unwrap_or(&dest_url);
+
+    //                 // remove "#" and everything after it
+    //                 let without_anchor = without_prefix.split('#').next().unwrap();
+
+    //                 // add .md if not present
+    //                 let normalized = if without_anchor.ends_with(".md") {
+    //                     without_anchor.to_string()
+    //                 } else {
+    //                     format!("{}.md", without_anchor)
+    //                 };
+
+    //                 let mut tmp_root = ws.root.clone();
+    //                 tmp_root.push(normalized);
+    //                 tmp_root
+    //             };
+    //             // simplest way to validate that the path exists
+    //             let canon_url = match dest_path.canonicalize() {
+    //                 Ok(canon_url) => canon_url,
+    //                 Err(_) => {
+    //                     error!("Link not found!: {dest_path:?}");
+    //                     continue;
+    //                 }
+    //             };
+
+    //             let dst_id = ZettelId::try_from(canon_url)?;
+
+    //             let link = Link::new(src_id, dst_id);
+
+    //             links.push(link)
+    //         }
+    //     }
+
+    //     Ok(links)
+    // }
 }
 
 impl From<ZettelModelEx> for Zettel {
@@ -177,5 +338,11 @@ impl TryFrom<&Path> for ZettelId {
 impl Display for ZettelId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0.to_string())
+    }
+}
+
+impl From<ZettelId> for NanoId {
+    fn from(value: ZettelId) -> Self {
+        value.0
     }
 }
