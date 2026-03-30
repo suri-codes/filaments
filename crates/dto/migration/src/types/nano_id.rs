@@ -1,7 +1,12 @@
+use std::str::FromStr as _;
+
 use nanoid::nanoid;
 use sea_orm::DeriveValueType;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveValueType)]
+#[derive(
+    Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, DeriveValueType,
+)]
 #[sea_orm(value_type = "String")]
 pub struct NanoId(pub(crate) String);
 
@@ -42,5 +47,11 @@ impl std::str::FromStr for NanoId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.to_owned()))
+    }
+}
+
+impl From<&str> for NanoId {
+    fn from(value: &str) -> Self {
+        NanoId::from_str(value).unwrap()
     }
 }

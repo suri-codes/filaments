@@ -9,6 +9,7 @@ pub use priority::Priority;
 
 mod zettel;
 pub use zettel::Zettel;
+pub use zettel::ZettelId;
 
 mod group;
 pub use group::Group;
@@ -19,6 +20,13 @@ pub use task::Task;
 
 mod workspace;
 pub use workspace::Workspace;
+
+mod link;
+pub use link::Link;
+
+mod kasten;
+#[expect(unused_imports)]
+pub use kasten::Kasten;
 
 mod frontmatter;
 pub use frontmatter::FrontMatter;

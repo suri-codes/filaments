@@ -70,5 +70,5 @@ async fn test_group_task_insert() {
 
     println!("group: {group:#?}");
     println!("task: {task:#?}");
-    panic!()
+    // panic!()
 }
