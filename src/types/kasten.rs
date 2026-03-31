@@ -6,7 +6,8 @@ use egui_graphs::{
     petgraph::{Directed, graph::NodeIndex, prelude::StableGraph},
 };
 use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
-use std::{cmp::max, collections::HashMap};
+use std::{cmp::max, collections::HashMap, sync::Arc};
+use tokio::sync::RwLock;
 
 use crate::types::Workspace;
 
@@ -34,6 +35,8 @@ pub type ZkGraph = Graph<Zettel, Link, Directed>;
 const GRAPH_MIN_NODES: usize = 128;
 /// Arbitrarily chosen minimum number of edges
 const GRAPH_MIN_EDGES: usize = GRAPH_MIN_NODES * 3;
+
+pub type KastenHandle = Arc<RwLock<Kasten>>;
 
 impl Kasten {
     /// Indexes the `Workspace` and constructs a `Kasten`

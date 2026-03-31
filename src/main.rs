@@ -4,8 +4,16 @@
 
 use std::{process, sync::Arc};
 
-use crate::{cli::Cli, gui::FilViz, tui::TuiApp};
+use crate::{
+    cli::Cli,
+    config::Config,
+    gui::FilViz,
+    tui::TuiApp,
+    types::{Kasten, KastenHandle, Workspace},
+};
 use clap::Parser;
+use tokio::sync::RwLock;
+use tracing::{debug, info};
 
 mod cli;
 mod gui;
@@ -30,6 +38,15 @@ fn main() -> color_eyre::Result<()> {
         return rt.block_on(async { command.process().await });
     }
 
+    // create the kasten handle
+    let kh: KastenHandle = rt.block_on(async {
+        let cfg = Config::parse()?;
+        let ws = Workspace::instansiate(cfg.app_config.workspace).await?;
+        Ok::<KastenHandle, color_eyre::Report>(Arc::new(RwLock::new(Kasten::index(ws).await?)))
+    })?;
+
+    debug!("{kh:#?}");
+
     // then we spawn the tui on its own thread
     let tui_handle = std::thread::spawn({
         // arc stuff
@@ -39,7 +56,7 @@ fn main() -> color_eyre::Result<()> {
         move || -> color_eyre::Result<()> {
             // block the tui on the same runtime as above
             tui_rt.block_on(async {
-                let mut tui = TuiApp::new(args.tick_rate, args.frame_rate)?;
+                let mut tui = TuiApp::new(args.tick_rate, args.frame_rate, kh)?;
                 tui.run().await?;
                 // just close everything as soon as the tui is done running
                 process::exit(0);

@@ -11,6 +11,7 @@ use tracing::debug;
 use crate::{
     config::Config,
     tui::{Event, Tui, components::Zk},
+    types::KastenHandle,
 };
 
 use super::{components::Component, signal::Signal};
@@ -25,6 +26,7 @@ pub struct App {
     #[allow(dead_code)]
     region: Region,
     last_tick_key_events: Vec<KeyEvent>,
+    kh: KastenHandle,
     signal_tx: UnboundedSender<Signal>,
     signal_rx: UnboundedReceiver<Signal>,
 }
@@ -43,18 +45,19 @@ pub enum Region {
 
 impl App {
     /// Construct a new `App` instance.
-    pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
+    pub fn new(tick_rate: f64, frame_rate: f64, kh: KastenHandle) -> Result<Self> {
         let (signal_tx, signal_rx) = mpsc::unbounded_channel();
 
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(Zk::new())],
+            components: vec![Box::new(Zk::new(kh.clone()))],
             should_quit: false,
             should_suspend: false,
             config: Config::parse()?,
             region: Region::default(),
             last_tick_key_events: Vec::new(),
+            kh,
             signal_tx,
             signal_rx,
         })
