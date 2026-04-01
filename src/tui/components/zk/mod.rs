@@ -101,7 +101,7 @@ impl Zk<'_> {
             .expect("must exist");
 
         let zettel = kt
-            .get_by_zettel_id(selected_zettel)
+            .get_node_by_zettel_id(selected_zettel)
             .expect("must exist, handle case where it doesnt later...")
             .payload();
 
@@ -114,7 +114,7 @@ impl Zk<'_> {
 
         // okay now that we have the zettel we need to construct the zettel out of this id
         let zettel_view: ZettelView = kt
-            .get_by_zettel_id(selected_zettel)
+            .get_node_by_zettel_id(selected_zettel)
             .expect("must exist, handle case where it doesnt later...")
             .payload()
             .into();
@@ -147,13 +147,13 @@ impl Zk<'_> {
         let kh = self.kh.read().await;
 
         self.zettel_view = kh
-            .get_by_zettel_id(z_id)
+            .get_node_by_zettel_id(z_id)
             .expect("this should be valid unless the kasten changed out underneath us")
             .payload()
             .into();
 
         self.preview = kh
-            .get_by_zettel_id(z_id)
+            .get_node_by_zettel_id(z_id)
             .expect("this should be valid unless the kasten changed out underneath us")
             .payload()
             .content(&kh.ws)
@@ -182,6 +182,52 @@ impl Component for Zk<'_> {
                 self.zettel_list.state.select_previous();
                 self.update_views_from_zettel_list_selection().await?;
             }
+
+            Signal::OpenZettel => {
+                let Some(selcted) = self.zettel_list.state.selected() else {
+                    return Ok(None);
+                };
+
+                let Some(zid) = self.zettel_list.id_list.get(selcted) else {
+                    return Ok(None);
+                };
+
+                let kh = self.kh.read().await;
+                let path = kh
+                    .get_node_by_zettel_id(zid)
+                    .expect(
+                        "This should not have
+                    change dout underneath us",
+                    )
+                    .payload()
+                    .absolute_path(&kh.ws);
+
+                drop(kh);
+
+                return Ok(Some(Signal::Helix { path }));
+            }
+
+            Signal::ClosedZettel => {
+                let selected = self.zettel_list.state.selected().expect(
+                    "still have to
+                    figure out what to do if this doesnt exist",
+                );
+
+                let Some(id) = self.zettel_list.id_list.get(selected) else {
+                    return Ok(None);
+                };
+
+                let kh = self.kh.read().await;
+
+                let node = kh
+                    .get_node_by_zettel_id(id)
+                    .expect("Invariant broken, this must exist.");
+
+                self.zettel_view = ZettelView::from(node.payload());
+                self.preview = Preview::from(node.payload().content(&kh.ws).await?);
+                drop(kh);
+            }
+
             _ => {}
         }
         Ok(None)

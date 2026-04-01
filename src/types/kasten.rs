@@ -104,13 +104,43 @@ impl Kasten {
             most_recently_edited: None,
         })
     }
-    pub fn get_by_zettel_id(&self, id: &ZettelId) -> Option<&Node<Zettel, Link>> {
+
+    /// processes the `Zettel` for the provided `ZettelId`,
+    /// meaning it updates the internal state of the `Kasten`
+    /// with the changes in `Zettel`.
+    pub async fn process_zid(&mut self, zid: &ZettelId) -> Result<()> {
+        //NOTE: need to clone to get around borrowing rules but
+        // ideally we dont have to do this, kind of cringe imo.
+        let ws = self.ws.clone();
+
+        let zettel = self
+            .get_node_by_zettel_id_mut(zid)
+            .expect("this should not happen ever")
+            .payload_mut();
+
+        zettel.sync_with_file(&ws).await?;
+
+        Ok(())
+    }
+
+    pub fn get_node_by_zettel_id(&self, id: &ZettelId) -> Option<&Node<Zettel, Link>> {
         let idx = self.zid_to_gid.get(id)?;
 
         let node = self.graph.node(*idx).expect(
             "invariant broken if internal hashmap is not uptodate with
             the state of the graph...",
         );
+        Some(node)
+    }
+
+    pub fn get_node_by_zettel_id_mut(&mut self, id: &ZettelId) -> Option<&mut Node<Zettel, Link>> {
+        let idx = self.zid_to_gid.get(id)?;
+
+        let node = self.graph.node_mut(*idx).expect(
+            "invariant broken if internal hashmap is not uptodate with the
+            state of the graph...",
+        );
+
         Some(node)
     }
 }

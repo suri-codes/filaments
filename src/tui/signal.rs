@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use color_eyre::eyre::eyre;
 use strum::Display;
@@ -17,11 +17,21 @@ pub enum Signal {
     ClearScreen,
     Error(String),
     Help,
+
+    // movement
     MoveDown,
     MoveUp,
 
+    /// User asks to open a `Zettel`
+    OpenZettel,
+
+    /// The user is done editing a `Zettel`
+    ClosedZettel,
+
     /// this is fucking temporary
-    Helix,
+    Helix {
+        path: PathBuf,
+    },
 }
 
 impl FromStr for Signal {
@@ -32,9 +42,9 @@ impl FromStr for Signal {
             "suspend" => Self::Suspend,
             "resume" => Self::Resume,
             "quit" => Self::Quit,
-            "helix" => Self::Helix,
             "movedown" => Self::MoveDown,
             "moveup" => Self::MoveUp,
+            "openzettel" => Self::OpenZettel,
             _ => {
                 return Err(eyre!(format!(
                     "Attempt to construct a non-user Signal from str: {s}"

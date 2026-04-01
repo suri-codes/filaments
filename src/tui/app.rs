@@ -11,7 +11,7 @@ use tracing::debug;
 use crate::{
     config::Config,
     tui::{Event, Tui, components::Zk},
-    types::KastenHandle,
+    types::{KastenHandle, ZettelId},
 };
 
 use super::{components::Component, signal::Signal};
@@ -26,7 +26,7 @@ pub struct App {
     #[allow(dead_code)]
     region: Region,
     last_tick_key_events: Vec<KeyEvent>,
-    _kh: KastenHandle,
+    kh: KastenHandle,
     signal_tx: UnboundedSender<Signal>,
     signal_rx: UnboundedReceiver<Signal>,
 }
@@ -57,7 +57,7 @@ impl App {
             config: Config::parse()?,
             region: Region::default(),
             last_tick_key_events: Vec::new(),
-            _kh: kh,
+            kh,
             signal_tx,
             signal_rx,
         })
@@ -160,27 +160,38 @@ impl App {
                 debug!("handling signal: {signal:?}");
             }
 
-            match signal {
+            match signal.clone() {
                 Signal::Tick => {
                     self.last_tick_key_events.drain(..);
                 }
 
                 Signal::Quit => self.should_quit = true,
 
-                Signal::Helix => {
+                Signal::Helix { path } => {
                     tui.exit()?;
 
-                    let hx = spawn(move || -> Result<()> {
-                        Command::new("hx")
-                            .stdin(std::process::Stdio::inherit())
-                            .stdout(std::process::Stdio::inherit())
-                            .stderr(std::process::Stdio::inherit())
-                            .status()?;
+                    let hx = spawn({
+                        let path = path.clone();
+                        move || -> Result<()> {
+                            Command::new("hx")
+                                .stdin(std::process::Stdio::inherit())
+                                .stdout(std::process::Stdio::inherit())
+                                .stderr(std::process::Stdio::inherit())
+                                .arg(path)
+                                .status()?;
 
-                        Ok(())
+                            Ok(())
+                        }
                     });
 
                     hx.join().unwrap().unwrap();
+                    // once we get out of the edit, we need to update the zettel for this
+                    // path and then update the db and the kasten for this stuff
+                    let zid = ZettelId::try_from(path)?;
+
+                    self.kh.write().await.process_zid(&zid).await?;
+
+                    self.signal_tx.send(Signal::ClosedZettel)?;
 
                     tui.terminal.clear()?;
                     tui.enter()?;

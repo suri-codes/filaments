@@ -1,7 +1,7 @@
 use dto::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DateTime, EntityTrait as _, IntoActiveModel,
-    QueryFilter, TagActiveModel, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx,
-    ZettelTagActiveModel, ZettelTagColumns, ZettelTagEntity,
+    QueryFilter, TagActiveModel, TagEntity, ZettelActiveModel, ZettelActiveModelEx, ZettelEntity,
+    ZettelModelEx, ZettelTagActiveModel, ZettelTagColumns, ZettelTagEntity,
 };
 use pulldown_cmark::{Event, Parser, Tag as MkTag};
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,7 @@ use color_eyre::eyre::{Error, Result, eyre};
 use dto::NanoId;
 use tokio::{fs::File, io::AsyncWriteExt};
 
-use crate::types::{FrontMatter, Link, Tag, Workspace, frontmatter};
+use crate::types::{FrontMatter, Kasten, Link, Tag, Workspace, frontmatter};
 
 /// A `Zettel` is a note about a single idea.
 /// It can have many `Tag`s, just meaning it can fall under many
@@ -79,6 +79,18 @@ impl Zettel {
         Ok(zettel.into())
     }
 
+    pub async fn sync_with_file(&mut self, ws: &Workspace) -> Result<()> {
+        let (fm, content) = FrontMatter::extract_from_file(self.absolute_path(ws)).await?;
+
+        self.title = fm.title;
+
+        // it could have new tags and stuff...
+
+        // todo!();
+
+        Ok(())
+    }
+
     /// Returns the most up-to-date `FrontMatter` for this
     /// `Zettel`
     pub async fn front_matter(&self, ws: &Workspace) -> Result<FrontMatter> {
@@ -101,7 +113,7 @@ impl Zettel {
         Ok(File::open(path).await?)
     }
 
-    fn absolute_path(&self, ws: &Workspace) -> PathBuf {
+    pub fn absolute_path(&self, ws: &Workspace) -> PathBuf {
         ws.root.clone().join(&self.file_path)
     }
 
