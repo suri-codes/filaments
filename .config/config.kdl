@@ -8,5 +8,7 @@ keymap {
         <Ctrl-c> Quit // Another way to quit
         <Ctrl-z> Suspend // Suspend the application
         h Helix
+        j MoveDown
+        k MoveUp
     }
 }

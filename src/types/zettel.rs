@@ -15,12 +15,11 @@ use color_eyre::eyre::{Error, Result, eyre};
 use dto::NanoId;
 use tokio::{fs::File, io::AsyncWriteExt};
 
-use crate::types::{FrontMatter, Link, Tag, Workspace};
+use crate::types::{FrontMatter, Link, Tag, Workspace, frontmatter};
 
 /// A `Zettel` is a note about a single idea.
 /// It can have many `Tag`s, just meaning it can fall under many
 /// categories.
-#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Zettel {
     /// Should only be constructed from models.
@@ -30,6 +29,7 @@ pub struct Zettel {
     /// a workspace-local file path, needs to be canonicalized before usage
     pub file_path: PathBuf,
     pub created_at: DateTime,
+    pub modified_at: DateTime,
     pub tags: Vec<Tag>,
 }
 
@@ -111,6 +111,18 @@ impl Zettel {
         let mut path = ws.root.clone();
         path.push(id.0.to_string());
         Self::from_path(path, ws).await
+    }
+
+    pub fn created_at(&self) -> String {
+        self.created_at
+            .format(frontmatter::DATE_FMT_STR)
+            .to_string()
+    }
+
+    pub fn modified_at(&self) -> String {
+        self.modified_at
+            .format(frontmatter::DATE_FMT_STR)
+            .to_string()
     }
 
     pub async fn from_path(path: impl Into<PathBuf>, ws: &Workspace) -> Result<Self> {
@@ -273,6 +285,7 @@ impl From<ZettelModelEx> for Zettel {
             title: value.title,
             file_path: value.file_path.into(),
             created_at: value.created_at,
+            modified_at: value.modified_at,
             tags: value.tags.into_iter().map(Into::into).collect(),
         }
     }

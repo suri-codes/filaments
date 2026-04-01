@@ -2,7 +2,7 @@ use crate::types::{Link, Zettel, ZettelId};
 use color_eyre::eyre::Result;
 use eframe::emath;
 use egui_graphs::{
-    Graph,
+    Graph, Node,
     petgraph::{Directed, graph::NodeIndex, prelude::StableGraph},
 };
 use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
@@ -40,7 +40,6 @@ pub type KastenHandle = Arc<RwLock<Kasten>>;
 
 impl Kasten {
     /// Indexes the `Workspace` and constructs a `Kasten`
-    #[expect(dead_code)]
     pub async fn index(ws: Workspace) -> Result<Self> {
         let paths = std::fs::read_dir(&ws.root)?
             .par_bridge()
@@ -104,5 +103,14 @@ impl Kasten {
             zid_to_gid,
             most_recently_edited: None,
         })
+    }
+    pub fn get_by_zettel_id(&self, id: &ZettelId) -> Option<&Node<Zettel, Link>> {
+        let idx = self.zid_to_gid.get(id)?;
+
+        let node = self.graph.node(*idx).expect(
+            "invariant broken if internal hashmap is not uptodate with
+            the state of the graph...",
+        );
+        Some(node)
     }
 }

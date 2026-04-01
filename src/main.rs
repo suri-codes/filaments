@@ -13,7 +13,7 @@ use crate::{
 };
 use clap::Parser;
 use tokio::sync::RwLock;
-use tracing::{debug, info};
+use tracing::debug;
 
 mod cli;
 mod gui;
@@ -56,7 +56,7 @@ fn main() -> color_eyre::Result<()> {
         move || -> color_eyre::Result<()> {
             // block the tui on the same runtime as above
             tui_rt.block_on(async {
-                let mut tui = TuiApp::new(args.tick_rate, args.frame_rate, kh)?;
+                let mut tui = TuiApp::new(args.tick_rate, args.frame_rate, kh).await?;
                 tui.run().await?;
                 // just close everything as soon as the tui is done running
                 process::exit(0);

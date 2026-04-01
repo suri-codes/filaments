@@ -17,6 +17,9 @@ pub enum Signal {
     ClearScreen,
     Error(String),
     Help,
+    MoveDown,
+    MoveUp,
+
     /// this is fucking temporary
     Helix,
 }
@@ -30,6 +33,8 @@ impl FromStr for Signal {
             "resume" => Self::Resume,
             "quit" => Self::Quit,
             "helix" => Self::Helix,
+            "movedown" => Self::MoveDown,
+            "moveup" => Self::MoveUp,
             _ => {
                 return Err(eyre!(format!(
                     "Attempt to construct a non-user Signal from str: {s}"
