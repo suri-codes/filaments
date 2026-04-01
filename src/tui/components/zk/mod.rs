@@ -2,21 +2,26 @@ use async_trait::async_trait;
 use color_eyre::eyre::Result;
 use ratatui::{
     prelude::*,
-    widgets::{Block, List, ListState},
+    widgets::{Block, ListState},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     tui::{Signal, components::Component},
-    types::{KastenHandle, ZettelId},
+    types::KastenHandle,
 };
 
 mod preview;
+mod zettel_list;
 mod zettel_view;
 
 use preview::Preview;
+use zettel_list::ZettelList;
 use zettel_view::ZettelView;
 
+/// in theory we could do some fancy `type_state` encoding stuff
+/// to make this work cleanly (so we know when the widgets are properly
+/// initialized)
 pub struct Zk<'text> {
     signal_tx: Option<UnboundedSender<Signal>>,
     kh: KastenHandle,
@@ -30,12 +35,6 @@ struct Layouts {
     left_right: Layout,
     search_zl: Layout,
     z_preview: Layout,
-}
-
-struct ZettelList<'text> {
-    render_list: List<'text>,
-    id_list: Vec<ZettelId>,
-    state: ListState,
 }
 
 impl Default for Layouts {
@@ -63,32 +62,11 @@ impl Zk<'_> {
 
         let nodes = kt.graph.nodes_iter().collect::<Vec<_>>();
 
-        let zettel_list = {
-            let render_list = List::new(nodes.iter().map(|(_, n)| {
-                let z = n.payload();
-                let title = z.title.clone();
-                let _tags = z.tags.clone();
-                // let _last_modified = z.modified_at;
-                Text::from(title)
-            }))
-            .style(Color::White)
-            .highlight_style(Modifier::REVERSED)
-            .highlight_symbol("> ");
-
-            let id_list = nodes
-                .iter()
-                .map(|(_, n)| n.payload().id.clone())
-                .collect::<Vec<_>>();
-
-            let mut state = ListState::default();
-            state.select_first();
-
-            ZettelList {
-                render_list,
-                id_list,
-                state,
-            }
-        };
+        // in theory this is wasted compute, we should be initializing all our
+        // stuff inside the init function
+        let mut l_state = ListState::default();
+        l_state.select_first();
+        let zettel_list = ZettelList::new(nodes.as_slice(), l_state, 0);
 
         let selected_zettel = zettel_list
             .id_list
@@ -167,6 +145,26 @@ impl Zk<'_> {
 
 #[async_trait]
 impl Component for Zk<'_> {
+    /// this tells us how big the space we have for this is
+    async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
+        let total_width = area.width;
+
+        let kt = self.kh.read().await;
+
+        let nodes = kt.graph.nodes_iter().collect::<Vec<_>>();
+
+        let mut l_state = ListState::default();
+        l_state.select_first();
+
+        let zettel_list = ZettelList::new(nodes.as_slice(), l_state, total_width / 2);
+
+        self.zettel_list = zettel_list;
+
+        drop(kt);
+
+        Ok(())
+    }
+
     fn register_signal_handler(&mut self, tx: UnboundedSender<Signal>) -> Result<()> {
         self.signal_tx = Some(tx);
         Ok(())
@@ -223,6 +221,15 @@ impl Component for Zk<'_> {
                     .get_node_by_zettel_id(id)
                     .expect("Invariant broken, this must exist.");
 
+                //TODO: we would actually want to create the new zettel_list_item
+                // and insert it into the list where the selected id is there, that
+                // is what makes the most sense imo
+                self.zettel_list = ZettelList::new(
+                    // ideally we dont want to do this right?
+                    kh.graph.nodes_iter().collect::<Vec<_>>().as_slice(),
+                    self.zettel_list.state,
+                    self.zettel_list.width,
+                );
                 self.zettel_view = ZettelView::from(node.payload());
                 self.preview = Preview::from(node.payload().content(&kh.ws).await?);
                 drop(kh);

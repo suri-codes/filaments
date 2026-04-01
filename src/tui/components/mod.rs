@@ -58,7 +58,7 @@ pub trait Component: Send + Sync {
     /// # Returns
     ///
     /// * [`color_eyre::Result<()>`] - An Ok result or an error.
-    fn init(&mut self, area: Size) -> color_eyre::Result<()> {
+    async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
         let _ = area; // to appease clippy
         Ok(())
     }

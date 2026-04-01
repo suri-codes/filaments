@@ -77,7 +77,7 @@ impl App {
         }
 
         for component in &mut self.components {
-            component.init(tui.size()?)?;
+            component.init(tui.size()?).await?;
         }
 
         let signal_tx = self.signal_tx.clone();
