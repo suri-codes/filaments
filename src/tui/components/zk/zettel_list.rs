@@ -1,6 +1,6 @@
 use egui_graphs::{Node, petgraph::graph::NodeIndex};
 use ratatui::{
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
     widgets::{List, ListState},
 };
@@ -24,16 +24,19 @@ pub struct ZettelListItem<'text> {
 impl From<&Zettel> for ZettelListItem<'_> {
     fn from(value: &Zettel) -> Self {
         Self {
-            title: Span::from(value.title.clone()),
+            title: Span::from(value.title.clone())
+                .style(Style::new().cyan())
+                .add_modifier(Modifier::BOLD),
             tags: value
                 .tags
                 .iter()
                 .map(|t| {
                     Span::from(format!("{} ", t.name))
                         .style(Style::new().fg(t.color.into()).italic())
+                        .add_modifier(Modifier::DIM)
                 })
                 .collect(),
-            date: Span::from(value.created_at()),
+            date: Span::from(value.created_at()).style(Style::new().add_modifier(Modifier::DIM)),
             width: 0,
         }
     }
@@ -46,20 +49,24 @@ where
     fn from(value: ZettelListItem<'item>) -> Self {
         let title_width: usize = value.title.width();
         let tags_width: usize = value.tags.iter().map(Span::width).sum();
-        let date_width: usize = value.date.width();
+        let date_width: usize = value.date.width() + 2;
 
         // tags start 2 tabs after the title
         let gap_after_title = 2;
         let used = title_width + gap_after_title + tags_width + date_width;
         let padding = (value.width as usize).saturating_sub(used);
 
-        let line = std::iter::once(value.title)
+        let mut spans: Vec<Span> = std::iter::once(value.title)
             .chain(std::iter::once(Span::raw("  ")))
             .chain(value.tags)
             .chain(std::iter::once(Span::raw(" ".repeat(padding))))
-            .chain(std::iter::once(value.date))
-            .collect::<Line>();
+            .collect();
 
+        if tags_width + title_width + date_width <= value.width as usize {
+            spans.push(value.date);
+        }
+
+        let line = Line::from(spans);
         line.into()
     }
 }
