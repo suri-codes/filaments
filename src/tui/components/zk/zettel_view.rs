@@ -1,7 +1,8 @@
 use ratatui::{
     layout::{Constraint, Layout},
-    text::Text,
-    widgets::Widget,
+    style::Style,
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, Paragraph, Widget},
 };
 
 use crate::types::Zettel;
@@ -9,27 +10,55 @@ use crate::types::Zettel;
 /// A `Widget` that represents a `Zettel`
 #[derive(Debug, Clone)]
 pub struct ZettelView<'text> {
-    title: Text<'text>,
-    tags: Text<'text>,
-    created_at: Text<'text>,
-    modified_at: Text<'text>,
-    id: Text<'text>,
+    // title: Text<'text>,
+    title: Paragraph<'text>,
+    tags: Paragraph<'text>,
+    created_at: Paragraph<'text>,
+    zettel_id: Paragraph<'text>,
     layouts: Layouts,
 }
 
 impl From<&Zettel> for ZettelView<'_> {
     fn from(value: &Zettel) -> Self {
         Self {
-            title: Text::from(value.title.clone()),
-            tags: Text::from(
+            title: Paragraph::new(value.title.clone()).block(
+                Block::default()
+                    .title("Title")
+                    .borders(Borders::all())
+                    .border_style(Style::new())
+                    .border_type(BorderType::Plain),
+            ),
+            tags: Paragraph::new(
                 value
                     .tags
                     .iter()
-                    .fold("  ".to_owned(), |acc, t| format!("{acc} {}", t.name)),
+                    .map(|t| {
+                        Span::from(format!("{} ", t.name)).style(Style::new().fg(t.color.into()))
+                    })
+                    .collect::<Line>(),
+            )
+            .block(
+                Block::default()
+                    .title("Tags")
+                    .borders(Borders::all())
+                    .border_style(Style::new())
+                    .border_type(BorderType::Plain),
             ),
-            created_at: Text::from(value.created_at()),
-            modified_at: Text::from(value.modified_at()),
-            id: Text::from(value.id.to_string()),
+            created_at: Paragraph::new(value.created_at()).block(
+                Block::default()
+                    .title("Created At")
+                    .borders(Borders::all())
+                    .border_style(Style::new())
+                    .border_type(BorderType::Plain),
+            ),
+            zettel_id: Paragraph::new(value.id.to_string()).block(
+                Block::default()
+                    .title("Id")
+                    .borders(Borders::all())
+                    .border_style(Style::new())
+                    .border_type(BorderType::Plain),
+            ),
+
             layouts: Layouts::default(),
         }
     }
@@ -37,28 +66,19 @@ impl From<&Zettel> for ZettelView<'_> {
 
 #[derive(Debug, Clone)]
 struct Layouts {
-    left_right: Layout,
-    title_tags: Layout,
-    cr_mod_id: Layout,
+    top_bottom: Layout,
+    title_created: Layout,
+    tags_id: Layout,
 }
 
 impl Default for Layouts {
     fn default() -> Self {
         Self {
-            left_right: Layout::horizontal(vec![
-                Constraint::Percentage(70),
-                Constraint::Percentage(30),
-            ]),
+            top_bottom: Layout::vertical(vec![Constraint::Max(3), Constraint::Max(3)]),
 
-            title_tags: Layout::vertical(vec![
-                Constraint::Percentage(50),
-                Constraint::Percentage(50),
-            ]),
-            cr_mod_id: Layout::vertical(vec![
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-            ]),
+            title_created: Layout::horizontal(vec![Constraint::Fill(80), Constraint::Min(24)]),
+
+            tags_id: Layout::horizontal(vec![Constraint::Fill(95), Constraint::Min(8)]),
         }
     }
 }
@@ -68,22 +88,21 @@ impl Widget for ZettelView<'_> {
     where
         Self: Sized,
     {
-        let (title_rect, tags_rect, created_rect, modified_rect, id_rect) = {
-            let rects = self.layouts.left_right.split(area);
+        let (title_rect, created_rect, tags_rect, modified_rect) = {
+            let rects = self.layouts.top_bottom.split(area);
 
             let (left, right) = (rects[0], rects[1]);
 
-            let l_rects = self.layouts.title_tags.split(left);
+            let t_rects = self.layouts.title_created.split(left);
 
-            let r_rects = self.layouts.cr_mod_id.split(right);
+            let b_rects = self.layouts.tags_id.split(right);
 
-            (l_rects[0], l_rects[1], r_rects[0], r_rects[1], r_rects[2])
+            (t_rects[0], t_rects[1], b_rects[0], b_rects[1])
         };
 
         self.title.render(title_rect, buf);
         self.tags.render(tags_rect, buf);
         self.created_at.render(created_rect, buf);
-        self.modified_at.render(modified_rect, buf);
-        self.id.render(id_rect, buf);
+        self.zettel_id.render(modified_rect, buf);
     }
 }

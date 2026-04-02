@@ -48,10 +48,7 @@ impl Default for Layouts {
                 Constraint::Percentage(10),
                 Constraint::Percentage(90),
             ]),
-            z_preview: Layout::vertical(vec![
-                Constraint::Percentage(20),
-                Constraint::Percentage(80),
-            ]),
+            z_preview: Layout::vertical(vec![Constraint::Max(6), Constraint::Percentage(80)]),
         }
     }
 }
@@ -221,15 +218,15 @@ impl Component for Zk<'_> {
                     .get_node_by_zettel_id(id)
                     .expect("Invariant broken, this must exist.");
 
-                //TODO: we would actually want to create the new zettel_list_item
-                // and insert it into the list where the selected id is there, that
-                // is what makes the most sense imo
+                // actually this is the only way to do it with the list thing,
+                // the ratatui api doesnt expose a swap function to the inner render
+                // list.
                 self.zettel_list = ZettelList::new(
-                    // ideally we dont want to do this right?
                     kh.graph.nodes_iter().collect::<Vec<_>>().as_slice(),
                     self.zettel_list.state,
                     self.zettel_list.width,
                 );
+
                 self.zettel_view = ZettelView::from(node.payload());
                 self.preview = Preview::from(node.payload().content(&kh.ws).await?);
                 drop(kh);
@@ -267,6 +264,7 @@ impl Component for Zk<'_> {
 
         frame.render_widget(self.zettel_view.clone(), zettel_layout);
         frame.render_widget(self.preview.clone(), preview_layout);
+        // frame.render_widget(Block::new().bg(Color::Red), preview_layout);
 
         Ok(())
     }
