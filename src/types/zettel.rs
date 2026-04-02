@@ -138,15 +138,23 @@ impl Zettel {
         }
 
         // now any tags that are left inside zettel_tag_strings,
-        // we have to put them inside the db
-        for new_tag in tag_strings {
-            // create a new tag
-            let tag = TagActiveModel {
-                name: ActiveValue::Set(new_tag),
-                ..Default::default()
-            }
-            .insert(&ws.db)
-            .await?;
+        // we have to look up the tags in the db and then reset them?
+        for tag_str in tag_strings {
+            // this is the tag that either already exists with this name, or we just created this new one
+            let tag = if let Some(existing) = TagEntity::load()
+                .filter_by_name(&tag_str)
+                .one(&ws.db)
+                .await?
+            {
+                existing
+            } else {
+                let am = TagActiveModel {
+                    name: ActiveValue::Set(tag_str),
+                    ..Default::default()
+                };
+
+                am.insert(&ws.db).await?.into()
+            };
 
             // this zettel has this tag now
             let _ = ZettelTagActiveModel {
@@ -223,10 +231,6 @@ impl Zettel {
 
         let (front_matter, _) = FrontMatter::extract_from_file(&ws.root.clone().join(path)).await?;
 
-        let mut zettel_tag_strings = front_matter.tag_strings.clone();
-
-        zettel_tag_strings.sort();
-
         // get the zettel from the db
         let db_zettel: ZettelModelEx = if let Some(existing_zettel) = ZettelEntity::load()
             .with(TagEntity)
@@ -254,52 +258,12 @@ impl Zettel {
                 .expect("we just inserted the zettel")
         };
 
-        // get the tags for it
-        for db_tag in db_zettel.tags {
-            if let Ok(idx) = zettel_tag_strings.binary_search(&db_tag.name) {
-                // we remove tags we have already processed
-                zettel_tag_strings.remove(idx);
-            } else {
-                // the db says the file has tag `x`, but that tag is missing from the
-                // front matter, we can assume its gone, lets delete that link
-                let to_remove = ZettelTagEntity::find()
-                    .filter(ZettelTagColumns::ZettelNanoId.eq(id.0.clone()))
-                    .filter(ZettelTagColumns::TagNanoId.eq(db_tag.nano_id))
-                    .one(&ws.db)
-                    .await?
-                    .expect("this link must exist");
-
-                to_remove.into_active_model().delete(&ws.db).await?;
-            }
-        }
-
-        // now any tags that are left inside zettel_tag_strings,
-        // we have to put them inside the db
-        for new_tag in zettel_tag_strings {
-            // create a new tag
-            let tag = TagActiveModel {
-                name: ActiveValue::Set(new_tag),
-                ..Default::default()
-            }
-            .insert(&ws.db)
-            .await?;
-
-            // this zettel has this tag now
-            let _ = ZettelTagActiveModel {
-                zettel_nano_id: ActiveValue::Set(id.to_string()),
-                tag_nano_id: ActiveValue::Set(tag.nano_id.to_string()),
-            }
-            .insert(&ws.db)
-            .await?;
-        }
+        let mut temp_zettel: Self = db_zettel.clone().into();
+        temp_zettel.sync_tags(ws).await?;
 
         if front_matter.title != db_zettel.title {
-            let am = ZettelActiveModel {
-                id: ActiveValue::Unchanged(db_zettel.id),
-                title: ActiveValue::Set(front_matter.title.clone()),
-                ..Default::default()
-            };
-
+            let mut am = db_zettel.into_active_model();
+            am.title = ActiveValue::Set(front_matter.title.clone());
             am.update(&ws.db).await?;
         }
 
