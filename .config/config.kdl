@@ -7,9 +7,9 @@ keymap {
         q Quit // Quit the application
         <Ctrl-c> Quit // Another way to quit
         <Ctrl-z> Suspend // Suspend the application
-        j MoveDown
-        k MoveUp
-        o OpenZettel
-        n NewZettel
+        up MoveUp
+        down MoveDown
+        enter OpenZettel
+        <Ctrl-n> NewZettel
     }
 }
