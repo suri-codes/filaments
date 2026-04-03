@@ -1,11 +1,10 @@
-use egui_graphs::{Node, petgraph::graph::NodeIndex};
 use ratatui::{
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
     widgets::{List, ListState},
 };
 
-use crate::types::{Link, Zettel, ZettelId};
+use crate::types::{Zettel, ZettelId};
 
 pub struct ZettelList<'text> {
     pub render_list: ratatui::widgets::List<'text>,
@@ -72,22 +71,17 @@ where
 }
 
 impl ZettelList<'_> {
-    pub fn new(nodes: &[(NodeIndex, &Node<Zettel, Link>)], state: ListState, width: u16) -> Self {
-        let render_list = List::new(nodes.iter().map(|(_, n)| {
-            let z = n.payload();
+    pub fn new(zettels: Vec<Zettel>, state: ListState, width: u16) -> Self {
+        let render_list = List::new(zettels.iter().map(|z| {
             let mut zli: ZettelListItem<'_> = z.into();
             zli.width = width;
-
             Text::from(zli)
         }))
         .style(Color::White)
         .highlight_style(Modifier::REVERSED)
         .highlight_symbol("> ");
 
-        let id_list = nodes
-            .iter()
-            .map(|(_, n)| n.payload().id.clone())
-            .collect::<Vec<_>>();
+        let id_list = zettels.into_iter().map(|z| z.id).collect::<Vec<_>>();
 
         ZettelList {
             render_list,

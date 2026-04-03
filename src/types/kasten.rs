@@ -133,25 +133,23 @@ impl Kasten {
             let zid = zettel.id.clone();
             let idx = self.graph.add_node(zettel);
 
-            gid = Some(
-                self.zid_to_gid
-                    .insert(zid.clone(), idx)
-                    .expect("this cannot have existed already"),
-            );
+            self.zid_to_gid.insert(zid.clone(), idx);
+
+            gid = Some(idx);
 
             self.get_node_by_zettel_id_mut(&zid)
                 .expect("we just inserted it")
                 .payload_mut()
         };
 
+        // and then we sync with the file
+        zettel.sync_with_file(&ws).await?;
+
         // to get past borrowchecker rules
-        let mut zettel = zettel.clone();
+        let zettel = zettel.clone();
 
         // gid must be set
         let gid = gid.unwrap();
-
-        // and then we sync with the file
-        zettel.sync_with_file(&ws).await?;
 
         // and now we manage the links going out of the file
 

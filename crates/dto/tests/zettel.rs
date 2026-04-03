@@ -2,7 +2,7 @@ use dto::{
     ActiveModelTrait, ActiveValue::Set, ColorDTO, TagActiveModel, TagEntity, TagModel,
     ZettelActiveModel, ZettelEntity, ZettelModel,
 };
-use sea_orm::IntoActiveModel;
+use sea_orm::{IntoActiveModel, QueryOrder};
 
 mod common;
 
@@ -56,7 +56,9 @@ async fn test_zettel_tag_insert() {
     let zettels_for_tag = TagEntity::load()
         .filter_by_nano_id(tag.nano_id.clone())
         .with(ZettelEntity)
+        
         .all(&db)
+
         .await
         .unwrap();
 

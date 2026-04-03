@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
+use dto::{QueryOrder, TagEntity, ZettelColumns, ZettelEntity};
 use ratatui::{
     prelude::*,
     widgets::{Block, ListState},
@@ -8,7 +9,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     tui::{Signal, components::Component},
-    types::KastenHandle,
+    types::{KastenHandle, Zettel},
 };
 
 mod preview;
@@ -24,6 +25,8 @@ use zettel_view::ZettelView;
 /// initialized)
 pub struct Zk<'text> {
     signal_tx: Option<UnboundedSender<Signal>>,
+    // TODO: really think whether or not this actually needs a kasten
+    // handle or is a workspace clone enough?
     kh: KastenHandle,
     layouts: Layouts,
     zettel_list: ZettelList<'text>,
@@ -57,13 +60,20 @@ impl Zk<'_> {
     pub async fn new(kh: KastenHandle) -> Result<Self> {
         let kt = kh.read().await;
 
-        let nodes = kt.graph.nodes_iter().collect::<Vec<_>>();
+        let zettels: Vec<Zettel> = ZettelEntity::load()
+            .with(TagEntity)
+            .order_by_desc(ZettelColumns::ModifiedAt)
+            .all(&kt.ws.db)
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect();
 
         // in theory this is wasted compute, we should be initializing all our
         // stuff inside the init function
         let mut l_state = ListState::default();
         l_state.select_first();
-        let zettel_list = ZettelList::new(nodes.as_slice(), l_state, 0);
+        let zettel_list = ZettelList::new(zettels, l_state, 0);
 
         let selected_zettel = zettel_list
             .id_list
@@ -138,6 +148,21 @@ impl Zk<'_> {
 
         Ok(())
     }
+
+    pub async fn get_zettels_by_current_query(&self) -> Result<Vec<Zettel>> {
+        let kt = self.kh.read().await;
+        let models = ZettelEntity::load()
+            .with(TagEntity)
+            .order_by_desc(ZettelColumns::ModifiedAt)
+            .all(&kt.ws.db)
+            .await?;
+
+        // im being a good boy and dropping this as soon as im done with the db
+        drop(kt);
+
+        let zettels: Vec<Zettel> = models.into_iter().map(Into::into).collect();
+        Ok(zettels)
+    }
 }
 
 #[async_trait]
@@ -146,18 +171,17 @@ impl Component for Zk<'_> {
     async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
         let total_width = area.width;
 
-        let kt = self.kh.read().await;
-
-        let nodes = kt.graph.nodes_iter().collect::<Vec<_>>();
-
+        // in theory this is wasted compute, we should be initializing all our
         let mut l_state = ListState::default();
         l_state.select_first();
 
-        let zettel_list = ZettelList::new(nodes.as_slice(), l_state, total_width / 2);
+        let zettel_list = ZettelList::new(
+            self.get_zettels_by_current_query().await?,
+            l_state,
+            total_width / 2,
+        );
 
         self.zettel_list = zettel_list;
-
-        drop(kt);
 
         Ok(())
     }
@@ -212,9 +236,9 @@ impl Component for Zk<'_> {
                     return Ok(None);
                 };
 
-                let kh = self.kh.read().await;
+                let kt = self.kh.read().await;
 
-                let node = kh
+                let node = kt
                     .get_node_by_zettel_id(id)
                     .expect("Invariant broken, this must exist.");
 
@@ -222,14 +246,14 @@ impl Component for Zk<'_> {
                 // the ratatui api doesnt expose a swap function to the inner render
                 // list.
                 self.zettel_list = ZettelList::new(
-                    kh.graph.nodes_iter().collect::<Vec<_>>().as_slice(),
+                    self.get_zettels_by_current_query().await?,
                     self.zettel_list.state,
                     self.zettel_list.width,
                 );
 
                 self.zettel_view = ZettelView::from(node.payload());
-                self.preview = Preview::from(node.payload().content(&kh.ws).await?);
-                drop(kh);
+                self.preview = Preview::from(node.payload().content(&kt.ws).await?);
+                drop(kt);
             }
 
             _ => {}
