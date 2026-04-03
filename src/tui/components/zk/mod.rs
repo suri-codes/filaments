@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
+use crossterm::event::KeyEvent;
 use dto::{QueryOrder, TagEntity, ZettelColumns, ZettelEntity};
-use ratatui::{
-    prelude::*,
-    widgets::{Block, ListState},
-};
+use ratatui::{prelude::*, widgets::ListState};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
@@ -13,10 +11,12 @@ use crate::{
 };
 
 mod preview;
+mod search;
 mod zettel_list;
 mod zettel_view;
 
 use preview::Preview;
+use search::Search;
 use zettel_list::ZettelList;
 use zettel_view::ZettelView;
 
@@ -29,6 +29,7 @@ pub struct Zk<'text> {
     // handle or is a workspace clone enough?
     kh: KastenHandle,
     layouts: Layouts,
+    search: Search<'text>,
     zettel_list: ZettelList<'text>,
     zettel_view: ZettelView<'text>,
     preview: Preview<'text>,
@@ -47,11 +48,8 @@ impl Default for Layouts {
                 Constraint::Percentage(50),
                 Constraint::Percentage(50),
             ]),
-            search_zl: Layout::vertical(vec![
-                Constraint::Percentage(10),
-                Constraint::Percentage(90),
-            ]),
-            z_preview: Layout::vertical(vec![Constraint::Max(6), Constraint::Percentage(80)]),
+            search_zl: Layout::vertical(vec![Constraint::Min(6), Constraint::Fill(95)]),
+            z_preview: Layout::vertical(vec![Constraint::Min(6), Constraint::Fill(95)]),
         }
     }
 }
@@ -113,6 +111,7 @@ impl Zk<'_> {
             zettel_list,
             zettel_view,
             preview,
+            search: Search::default(),
         })
     }
 
@@ -159,6 +158,8 @@ impl Zk<'_> {
 
         // im being a good boy and dropping this as soon as im done with the db
         drop(kt);
+
+        // for now we are going to just read that shit every time...
 
         let zettels: Vec<Zettel> = models.into_iter().map(Into::into).collect();
         Ok(zettels)
@@ -251,6 +252,11 @@ impl Component for Zk<'_> {
                     self.zettel_list.width,
                 );
 
+                // we have to select the first one because when
+                // the zettels from the db get fetched, they are ordered
+                // by most recently modified
+                self.zettel_list.state.select_first();
+
                 self.zettel_view = ZettelView::from(node.payload());
                 self.preview = Preview::from(node.payload().content(&kt.ws).await?);
                 drop(kt);
@@ -258,6 +264,13 @@ impl Component for Zk<'_> {
 
             _ => {}
         }
+        Ok(None)
+    }
+
+    fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
+        // ok so we get the text here too
+        // self.search.title.input(key);
+
         Ok(None)
     }
 
@@ -278,7 +291,7 @@ impl Component for Zk<'_> {
             (l_rects[0], l_rects[1], r_rects[0], r_rects[1])
         };
 
-        frame.render_widget(Block::new().bg(Color::Red), search_layout);
+        frame.render_widget(self.search.clone(), search_layout);
 
         frame.render_stateful_widget(
             &self.zettel_list.render_list,
@@ -288,7 +301,6 @@ impl Component for Zk<'_> {
 
         frame.render_widget(self.zettel_view.clone(), zettel_layout);
         frame.render_widget(self.preview.clone(), preview_layout);
-        // frame.render_widget(Block::new().bg(Color::Red), preview_layout);
 
         Ok(())
     }

@@ -79,6 +79,7 @@ egui_graphs = "0.30.0"
 rayon = "1.11.0"
 rand = "0.10.0"
 pulldown-cmark = { version = "0.13.3", features = ["simd"] }
+ratatui-textarea = "0.8.0"
 
 [build-dependencies]
 anyhow = "1.0.102"
