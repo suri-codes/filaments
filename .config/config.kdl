@@ -10,5 +10,6 @@ keymap {
         j MoveDown
         k MoveUp
         o OpenZettel
+        n NewZettel
     }
 }

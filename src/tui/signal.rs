@@ -22,9 +22,10 @@ pub enum Signal {
     MoveDown,
     MoveUp,
 
+    /// New `Zettel`
+    NewZettel,
     /// User asks to open a `Zettel`
     OpenZettel,
-
     /// The user is done editing a `Zettel`
     ClosedZettel,
 
@@ -45,6 +46,7 @@ impl FromStr for Signal {
             "movedown" => Self::MoveDown,
             "moveup" => Self::MoveUp,
             "openzettel" => Self::OpenZettel,
+            "newzettel" => Self::NewZettel,
             _ => {
                 return Err(eyre!(format!(
                     "Attempt to construct a non-user Signal from str: {s}"

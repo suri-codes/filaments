@@ -11,7 +11,7 @@ use tracing::debug;
 use crate::{
     config::Config,
     tui::{Event, Tui, components::Zk},
-    types::{KastenHandle, ZettelId},
+    types::{KastenHandle, Zettel},
 };
 
 use super::{components::Component, signal::Signal};
@@ -167,6 +167,16 @@ impl App {
 
                 Signal::Quit => self.should_quit = true,
 
+                Signal::NewZettel => {
+                    // what the fuck am i going to do in here
+
+                    let ws = &self.kh.read().await.ws;
+                    let z = Zettel::new("", ws).await?;
+                    let path = z.absolute_path(ws);
+
+                    self.signal_tx.send(Signal::Helix { path })?;
+                }
+
                 Signal::Helix { path } => {
                     tui.exit()?;
 
@@ -187,9 +197,8 @@ impl App {
                     hx.join().unwrap().unwrap();
                     // once we get out of the edit, we need to update the zettel for this
                     // path and then update the db and the kasten for this stuff
-                    let zid = ZettelId::try_from(path)?;
 
-                    self.kh.write().await.process_zid(&zid).await?;
+                    self.kh.write().await.process_path(&path).await?;
 
                     self.signal_tx.send(Signal::ClosedZettel)?;
 

@@ -314,6 +314,8 @@ impl Zettel {
                     continue;
                 };
 
+                // TODO: check that the thing actually exists inside the ws.db
+                // instead of just seeing if we can turn it into a ZettelId
                 let dst_id = ZettelId::try_from(canon_url)?;
 
                 let link = Link::new(self.id.clone(), dst_id);

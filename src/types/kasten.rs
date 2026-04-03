@@ -1,12 +1,13 @@
 use crate::types::{Link, Zettel, ZettelId};
 use color_eyre::eyre::Result;
+use dto::{TagEntity, ZettelEntity};
 use eframe::emath;
 use egui_graphs::{
     Graph, Node,
-    petgraph::{Directed, graph::NodeIndex, prelude::StableGraph},
+    petgraph::{Directed, Direction, graph::NodeIndex, prelude::StableGraph, visit::EdgeRef},
 };
 use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
-use std::{cmp::max, collections::HashMap, sync::Arc};
+use std::{cmp::max, collections::HashMap, path::Path, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::types::Workspace;
@@ -108,17 +109,72 @@ impl Kasten {
     /// processes the `Zettel` for the provided `ZettelId`,
     /// meaning it updates the internal state of the `Kasten`
     /// with the changes in `Zettel`.
-    pub async fn process_zid(&mut self, zid: &ZettelId) -> Result<()> {
+    pub async fn process_path(&mut self, path: &Path) -> Result<()> {
         //NOTE: need to clone to get around borrowing rules but
         // ideally we dont have to do this, kind of cringe imo.
         let ws = self.ws.clone();
 
-        let zettel = self
-            .get_node_by_zettel_id_mut(zid)
-            .expect("this should not happen ever")
-            .payload_mut();
+        let zid = ZettelId::try_from(path)?;
 
+        let mut gid = self.zid_to_gid.get(&zid).copied();
+        // sometimes this zid is new, so it wont be in the kasten
+        let zettel = if let Some(existing) = self.get_node_by_zettel_id_mut(&zid) {
+            existing.payload_mut()
+        } else {
+            // this should aleady be in the database though so lets get it from there first
+            let zettel: Zettel = ZettelEntity::load()
+                .filter_by_nano_id(zid)
+                .with(TagEntity)
+                .one(&ws.db)
+                .await?
+                .expect("This should be in the database already")
+                .into();
+
+            let zid = zettel.id.clone();
+            let idx = self.graph.add_node(zettel);
+
+            gid = Some(
+                self.zid_to_gid
+                    .insert(zid.clone(), idx)
+                    .expect("this cannot have existed already"),
+            );
+
+            self.get_node_by_zettel_id_mut(&zid)
+                .expect("we just inserted it")
+                .payload_mut()
+        };
+
+        // to get past borrowchecker rules
+        let mut zettel = zettel.clone();
+
+        // gid must be set
+        let gid = gid.unwrap();
+
+        // and then we sync with the file
         zettel.sync_with_file(&ws).await?;
+
+        // and now we manage the links going out of the file
+
+        // remove all the old shit
+        self.graph
+            .edges_directed(gid, Direction::Outgoing)
+            .map(|e| e.id())
+            .collect::<Vec<_>>()
+            .into_iter()
+            .for_each(|e| {
+                let _ = self.graph.remove_edge(e);
+            });
+
+        // add the links that actually exist
+        zettel.links(&ws).await?.into_iter().for_each(|link| {
+            // this is an option because a user c
+            let dest = self
+                .zid_to_gid
+                .get(&link.dest)
+                .expect("Links should be valid");
+
+            self.graph.add_edge(gid, *dest, link);
+        });
 
         Ok(())
     }
