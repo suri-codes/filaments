@@ -71,9 +71,9 @@ pub trait Component: Send + Sync {
     /// # Returns
     ///
     /// * [`color_eyre::Result<Option<signal>>`] - A signal to be processed or none.
-    fn handle_events(&mut self, event: Option<Event>) -> color_eyre::Result<Option<Signal>> {
+    async fn handle_events(&mut self, event: Option<Event>) -> color_eyre::Result<Option<Signal>> {
         let signal = match event {
-            Some(Event::Key(key_event)) => self.handle_key_event(key_event)?,
+            Some(Event::Key(key_event)) => self.handle_key_event(key_event).await?,
             Some(Event::Mouse(mouse_event)) => self.handle_mouse_event(mouse_event)?,
             _ => None,
         };
@@ -88,7 +88,7 @@ pub trait Component: Send + Sync {
     /// # Returns
     ///
     /// * [`color_eyre::Result<Option<signal>>`] - A signal to be processed or none.
-    fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
+    async fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
         let _ = key; // to appease clippy
         Ok(None)
     }

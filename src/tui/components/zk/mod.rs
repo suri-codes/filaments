@@ -4,6 +4,7 @@ use crossterm::event::KeyEvent;
 use dto::{QueryOrder, TagEntity, ZettelColumns, ZettelEntity};
 use ratatui::{prelude::*, widgets::ListState};
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::info;
 
 use crate::{
     tui::{Signal, components::Component},
@@ -23,10 +24,10 @@ use zettel_view::ZettelView;
 /// in theory we could do some fancy `type_state` encoding stuff
 /// to make this work cleanly (so we know when the widgets are properly
 /// initialized)
+/// The tui interface for interacting with a `ZettelKasten`.
+/// Has `Search` functionality and `Preview` to view each `Zettel`.
 pub struct Zk<'text> {
     signal_tx: Option<UnboundedSender<Signal>>,
-    // TODO: really think whether or not this actually needs a kasten
-    // handle or is a workspace clone enough?
     kh: KastenHandle,
     layouts: Layouts,
     search: Search<'text>,
@@ -45,10 +46,11 @@ impl Default for Layouts {
     fn default() -> Self {
         Self {
             left_right: Layout::horizontal(vec![
-                Constraint::Percentage(50),
-                Constraint::Percentage(50),
+                Constraint::Fill(51),
+                Constraint::Min(1),
+                Constraint::Fill(50),
             ]),
-            search_zl: Layout::vertical(vec![Constraint::Min(6), Constraint::Fill(95)]),
+            search_zl: Layout::vertical(vec![Constraint::Min(3), Constraint::Fill(95)]),
             z_preview: Layout::vertical(vec![Constraint::Min(6), Constraint::Fill(95)]),
         }
     }
@@ -58,14 +60,24 @@ impl Zk<'_> {
     pub async fn new(kh: KastenHandle) -> Result<Self> {
         let kt = kh.read().await;
 
-        let zettels: Vec<Zettel> = ZettelEntity::load()
-            .with(TagEntity)
-            .order_by_desc(ZettelColumns::ModifiedAt)
-            .all(&kt.ws.db)
-            .await?
-            .into_iter()
-            .map(Into::into)
-            .collect();
+        let fetch_all = async || -> Result<Vec<Zettel>> {
+            Ok(ZettelEntity::load()
+                .with(TagEntity)
+                .order_by_desc(ZettelColumns::ModifiedAt)
+                .all(&kt.ws.db)
+                .await?
+                .into_iter()
+                .map(Into::into)
+                .collect())
+        };
+
+        let mut zettels: Vec<Zettel> = fetch_all().await?;
+
+        if zettels.is_empty() {
+            // we should have a welcome zettel
+            Zettel::new("Welcome!", &kt.ws).await?;
+            zettels = fetch_all().await?;
+        }
 
         // in theory this is wasted compute, we should be initializing all our
         // stuff inside the init function
@@ -79,13 +91,14 @@ impl Zk<'_> {
                 zettel_list
                     .state
                     .selected()
-                    .expect("TODO: must handle the case where there isnt one..."),
+                    .expect("We explicitly select the first item"),
             )
-            .expect("must exist");
+            // so technically this might not exist
+            .expect("There must always be one atleast one zettel");
 
         let zettel = kt
             .get_node_by_zettel_id(selected_zettel)
-            .expect("must exist, handle case where it doesnt later...")
+            .expect("")
             .payload();
 
         let preview = Preview::from(
@@ -102,6 +115,8 @@ impl Zk<'_> {
             .payload()
             .into();
 
+        let ws = kt.ws.clone();
+
         drop(kt);
 
         Ok(Self {
@@ -111,7 +126,7 @@ impl Zk<'_> {
             zettel_list,
             zettel_view,
             preview,
-            search: Search::default(),
+            search: Search::new(ws),
         })
     }
 
@@ -162,7 +177,22 @@ impl Zk<'_> {
         // for now we are going to just read that shit every time...
 
         let zettels: Vec<Zettel> = models.into_iter().map(Into::into).collect();
+
         Ok(zettels)
+    }
+
+    pub async fn update_with_respect_to_query(&mut self) -> Result<()> {
+        let zettels = self
+            .search
+            .rank(self.get_zettels_by_current_query().await?)
+            .await;
+
+        self.zettel_list = ZettelList::new(zettels, self.zettel_list.state, self.zettel_list.width);
+        info!("we are moving selection to first");
+        self.zettel_list.state.select_first();
+        self.update_views_from_zettel_list_selection().await?;
+
+        Ok(())
     }
 }
 
@@ -227,11 +257,25 @@ impl Component for Zk<'_> {
                 return Ok(Some(Signal::Helix { path }));
             }
 
+            Signal::NewZettel => {
+                // what the fuck am i going to do in here
+
+                let ws = &self.kh.read().await.ws;
+
+                // we create the zettel with the query as the
+                let z = Zettel::new(self.search.query(), ws).await?;
+
+                let path = z.absolute_path(ws);
+
+                return Ok(Some(Signal::Helix { path }));
+            }
+
             Signal::ClosedZettel => {
-                let selected = self.zettel_list.state.selected().expect(
-                    "still have to
-                    figure out what to do if this doesnt exist",
-                );
+                let selected = self
+                    .zettel_list
+                    .state
+                    .selected()
+                    .expect("This must be the zettel we just edited");
 
                 let Some(id) = self.zettel_list.id_list.get(selected) else {
                     return Ok(None);
@@ -243,19 +287,16 @@ impl Component for Zk<'_> {
                     .get_node_by_zettel_id(id)
                     .expect("Invariant broken, this must exist.");
 
-                // actually this is the only way to do it with the list thing,
-                // the ratatui api doesnt expose a swap function to the inner render
-                // list.
+                // reset the state of the component
+                self.search.clear_query();
+                self.zettel_list.state.select_first();
+
+                // regenerate a fresh zettel list
                 self.zettel_list = ZettelList::new(
                     self.get_zettels_by_current_query().await?,
                     self.zettel_list.state,
                     self.zettel_list.width,
                 );
-
-                // we have to select the first one because when
-                // the zettels from the db get fetched, they are ordered
-                // by most recently modified
-                self.zettel_list.state.select_first();
 
                 self.zettel_view = ZettelView::from(node.payload());
                 self.preview = Preview::from(node.payload().content(&kt.ws).await?);
@@ -267,9 +308,13 @@ impl Component for Zk<'_> {
         Ok(None)
     }
 
-    fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
-        // ok so we get the text here too
-        // self.search.title.input(key);
+    async fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
+        // NOTE: this is hardcoded for now, but I honestly think people should not
+        // be able to change these binds, opinionated software or something...
+        if !(key.code.is_up() || key.code.is_down() || key.code.is_enter()) {
+            self.search.query.input(key);
+            self.update_with_respect_to_query().await?;
+        }
 
         Ok(None)
     }
@@ -282,7 +327,7 @@ impl Component for Zk<'_> {
         let (search_layout, zettel_list_layout, zettel_layout, preview_layout) = {
             let rects = self.layouts.left_right.split(area);
 
-            let (left, right) = (rects[0], rects[1]);
+            let (left, right) = (rects[0], rects[2]);
 
             let l_rects = self.layouts.search_zl.split(left);
 

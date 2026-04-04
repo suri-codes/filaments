@@ -74,7 +74,7 @@ struct Layouts {
 impl Default for Layouts {
     fn default() -> Self {
         Self {
-            top_bottom: Layout::vertical(vec![Constraint::Max(3), Constraint::Max(3)]),
+            top_bottom: Layout::vertical(vec![Constraint::Min(3), Constraint::Min(3)]),
 
             title_created: Layout::horizontal(vec![Constraint::Fill(80), Constraint::Min(24)]),
 

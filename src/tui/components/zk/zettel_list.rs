@@ -35,7 +35,7 @@ impl From<&Zettel> for ZettelListItem<'_> {
                         .add_modifier(Modifier::DIM)
                 })
                 .collect(),
-            date: Span::from(value.created_at()).style(Style::new().add_modifier(Modifier::DIM)),
+            date: Span::from(value.modified_at()).style(Style::new().add_modifier(Modifier::DIM)),
             width: 0,
         }
     }

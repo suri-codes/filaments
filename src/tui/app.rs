@@ -11,7 +11,7 @@ use tracing::debug;
 use crate::{
     config::Config,
     tui::{Event, Tui, components::Zk},
-    types::{KastenHandle, Zettel},
+    types::KastenHandle,
 };
 
 use super::{components::Component, signal::Signal};
@@ -124,7 +124,7 @@ impl App {
         }
 
         for component in &mut self.components {
-            if let Some(signal) = component.handle_events(Some(event.clone()))? {
+            if let Some(signal) = component.handle_events(Some(event.clone())).await? {
                 signal_tx.send(signal)?;
             }
         }
@@ -166,16 +166,6 @@ impl App {
                 }
 
                 Signal::Quit => self.should_quit = true,
-
-                Signal::NewZettel => {
-                    // what the fuck am i going to do in here
-
-                    let ws = &self.kh.read().await.ws;
-                    let z = Zettel::new("", ws).await?;
-                    let path = z.absolute_path(ws);
-
-                    self.signal_tx.send(Signal::Helix { path })?;
-                }
 
                 Signal::Helix { path } => {
                     tui.exit()?;
