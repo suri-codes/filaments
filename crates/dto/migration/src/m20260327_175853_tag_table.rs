@@ -20,7 +20,7 @@ impl MigrationTrait for Migration {
                             .unique_key()
                             .not_null(),
                     )
-                    .col(string(Tag::Name).not_null())
+                    .col(string(Tag::Name).unique_key().not_null())
                     .col(integer(Tag::Color).not_null())
                     .to_owned(),
             )

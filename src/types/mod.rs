@@ -25,8 +25,8 @@ mod link;
 pub use link::Link;
 
 mod kasten;
-#[expect(unused_imports)]
 pub use kasten::Kasten;
+pub use kasten::KastenHandle;
 
 mod frontmatter;
 pub use frontmatter::FrontMatter;

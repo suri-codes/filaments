@@ -1,7 +1,7 @@
 use dto::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DateTime, EntityTrait as _, IntoActiveModel,
-    QueryFilter, TagActiveModel, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx,
-    ZettelTagActiveModel, ZettelTagColumns, ZettelTagEntity,
+    QueryFilter, TagActiveModel, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModel,
+    ZettelModelEx, ZettelTagActiveModel, ZettelTagColumns, ZettelTagEntity,
 };
 use pulldown_cmark::{Event, Parser, Tag as MkTag};
 use serde::{Deserialize, Serialize};
@@ -15,12 +15,11 @@ use color_eyre::eyre::{Error, Result, eyre};
 use dto::NanoId;
 use tokio::{fs::File, io::AsyncWriteExt};
 
-use crate::types::{FrontMatter, Link, Tag, Workspace};
+use crate::types::{FrontMatter, Link, Tag, Workspace, frontmatter};
 
 /// A `Zettel` is a note about a single idea.
 /// It can have many `Tag`s, just meaning it can fall under many
 /// categories.
-#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Zettel {
     /// Should only be constructed from models.
@@ -30,6 +29,7 @@ pub struct Zettel {
     /// a workspace-local file path, needs to be canonicalized before usage
     pub file_path: PathBuf,
     pub created_at: DateTime,
+    pub modified_at: DateTime,
     pub tags: Vec<Tag>,
 }
 
@@ -79,6 +79,106 @@ impl Zettel {
         Ok(zettel.into())
     }
 
+    pub async fn sync_with_file(&mut self, ws: &Workspace) -> Result<()> {
+        let (fm, _) = FrontMatter::extract_from_file(self.absolute_path(ws)).await?;
+
+        let mut model = ZettelEntity::find_by_nano_id(self.id.clone())
+            .one(&ws.db)
+            .await?
+            .expect("this must exist")
+            .into_active_model();
+
+        model.title = ActiveValue::Set(fm.title);
+
+        let updated: ZettelModel = model.update(&ws.db).await?;
+
+        self.title = updated.title;
+        self.modified_at = updated.modified_at;
+        self.created_at = updated.created_at;
+
+        self.sync_tags(ws).await?;
+
+        Ok(())
+    }
+
+    /// Sync's `Tag`'s that are present in the frontmatter of this
+    /// `Zettel` to the database, and then updates the `Tag`s on the
+    /// `Zettel` to reflect the changes.
+    pub async fn sync_tags(&mut self, ws: &Workspace) -> Result<()> {
+        let mut fm = self.front_matter(ws).await?;
+        fm.tag_strings.sort();
+
+        let mut tag_strings = fm.tag_strings;
+
+        let Some(db_zettel): Option<ZettelModelEx> = ZettelEntity::load()
+            .with(TagEntity)
+            .filter_by_nano_id(self.id.clone())
+            .one(&ws.db)
+            .await?
+        else {
+            panic!("how the fuck was this deleted");
+        };
+
+        for db_tag in db_zettel.tags {
+            if let Ok(idx) = tag_strings.binary_search(&db_tag.name) {
+                // we remove tags we have already processed
+                tag_strings.remove(idx);
+            } else {
+                // the db says the file has tag `x`, but that tag is missing from the
+                // front matter, we can assume its gone, lets delete that link
+                let to_remove = ZettelTagEntity::find()
+                    .filter(ZettelTagColumns::ZettelNanoId.eq(self.id.0.clone()))
+                    .filter(ZettelTagColumns::TagNanoId.eq(db_tag.nano_id))
+                    .one(&ws.db)
+                    .await?
+                    .expect("this link must exist");
+
+                to_remove.into_active_model().delete(&ws.db).await?;
+            }
+        }
+
+        // now any tags that are left inside zettel_tag_strings,
+        // we have to look up the tags in the db and then reset them?
+        for tag_str in tag_strings {
+            // this is the tag that either already exists with this name, or we just created this new one
+            let tag = if let Some(existing) = TagEntity::load()
+                .filter_by_name(&tag_str)
+                .one(&ws.db)
+                .await?
+            {
+                existing
+            } else {
+                let am = TagActiveModel {
+                    name: ActiveValue::Set(tag_str),
+                    ..Default::default()
+                };
+
+                am.insert(&ws.db).await?.into()
+            };
+
+            // this zettel has this tag now
+            let _ = ZettelTagActiveModel {
+                zettel_nano_id: ActiveValue::Set(self.id.to_string()),
+                tag_nano_id: ActiveValue::Set(tag.nano_id.to_string()),
+            }
+            .insert(&ws.db)
+            .await?;
+        }
+
+        let entity = ZettelEntity::load()
+            .with(TagEntity)
+            .filter_by_nano_id(self.id.clone())
+            .one(&ws.db)
+            .await?
+            .expect("this exists");
+
+        let temp_zettel: Self = entity.into();
+
+        self.tags = temp_zettel.tags;
+
+        Ok(())
+    }
+
     /// Returns the most up-to-date `FrontMatter` for this
     /// `Zettel`
     pub async fn front_matter(&self, ws: &Workspace) -> Result<FrontMatter> {
@@ -101,16 +201,27 @@ impl Zettel {
         Ok(File::open(path).await?)
     }
 
-    fn absolute_path(&self, ws: &Workspace) -> PathBuf {
+    pub fn absolute_path(&self, ws: &Workspace) -> PathBuf {
         ws.root.clone().join(&self.file_path)
     }
 
     /// uses the id and root to parse out of the root directory
-    #[expect(dead_code)]
     pub async fn from_id(id: &ZettelId, ws: &Workspace) -> Result<Self> {
         let mut path = ws.root.clone();
         path.push(id.0.to_string());
         Self::from_path(path, ws).await
+    }
+
+    pub fn created_at(&self) -> String {
+        self.created_at
+            .format(frontmatter::DATE_FMT_STR)
+            .to_string()
+    }
+
+    pub fn modified_at(&self) -> String {
+        self.modified_at
+            .format(frontmatter::DATE_FMT_STR)
+            .to_string()
     }
 
     pub async fn from_path(path: impl Into<PathBuf>, ws: &Workspace) -> Result<Self> {
@@ -119,10 +230,6 @@ impl Zettel {
         let id = ZettelId::try_from(path.as_path())?;
 
         let (front_matter, _) = FrontMatter::extract_from_file(&ws.root.clone().join(path)).await?;
-
-        let mut zettel_tag_strings = front_matter.tag_strings.clone();
-
-        zettel_tag_strings.sort();
 
         // get the zettel from the db
         let db_zettel: ZettelModelEx = if let Some(existing_zettel) = ZettelEntity::load()
@@ -151,52 +258,12 @@ impl Zettel {
                 .expect("we just inserted the zettel")
         };
 
-        // get the tags for it
-        for db_tag in db_zettel.tags {
-            if let Ok(idx) = zettel_tag_strings.binary_search(&db_tag.name) {
-                // we remove tags we have already processed
-                zettel_tag_strings.remove(idx);
-            } else {
-                // the db says the file has tag `x`, but that tag is missing from the
-                // front matter, we can assume its gone, lets delete that link
-                let to_remove = ZettelTagEntity::find()
-                    .filter(ZettelTagColumns::ZettelNanoId.eq(id.0.clone()))
-                    .filter(ZettelTagColumns::TagNanoId.eq(db_tag.nano_id))
-                    .one(&ws.db)
-                    .await?
-                    .expect("this link must exist");
-
-                to_remove.into_active_model().delete(&ws.db).await?;
-            }
-        }
-
-        // now any tags that are left inside zettel_tag_strings,
-        // we have to put them inside the db
-        for new_tag in zettel_tag_strings {
-            // create a new tag
-            let tag = TagActiveModel {
-                name: ActiveValue::Set(new_tag),
-                ..Default::default()
-            }
-            .insert(&ws.db)
-            .await?;
-
-            // this zettel has this tag now
-            let _ = ZettelTagActiveModel {
-                zettel_nano_id: ActiveValue::Set(id.to_string()),
-                tag_nano_id: ActiveValue::Set(tag.nano_id.to_string()),
-            }
-            .insert(&ws.db)
-            .await?;
-        }
+        let mut temp_zettel: Self = db_zettel.clone().into();
+        temp_zettel.sync_tags(ws).await?;
 
         if front_matter.title != db_zettel.title {
-            let am = ZettelActiveModel {
-                id: ActiveValue::Unchanged(db_zettel.id),
-                title: ActiveValue::Set(front_matter.title.clone()),
-                ..Default::default()
-            };
-
+            let mut am = db_zettel.into_active_model();
+            am.title = ActiveValue::Set(front_matter.title.clone());
             am.update(&ws.db).await?;
         }
 
@@ -247,6 +314,8 @@ impl Zettel {
                     continue;
                 };
 
+                // TODO: check that the thing actually exists inside the ws.db
+                // instead of just seeing if we can turn it into a ZettelId
                 let dst_id = ZettelId::try_from(canon_url)?;
 
                 let link = Link::new(self.id.clone(), dst_id);
@@ -273,6 +342,7 @@ impl From<ZettelModelEx> for Zettel {
             title: value.title,
             file_path: value.file_path.into(),
             created_at: value.created_at,
+            modified_at: value.modified_at,
             tags: value.tags.into_iter().map(Into::into).collect(),
         }
     }

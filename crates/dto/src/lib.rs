@@ -12,6 +12,7 @@ pub use sea_orm::ColumnTrait;
 pub use sea_orm::EntityTrait;
 pub use sea_orm::IntoActiveModel;
 pub use sea_orm::QueryFilter;
+pub use sea_orm::QueryOrder;
 
 /// Exporting this as a generic NanoId.
 pub use migration::types::NanoId;

@@ -1,3 +1,4 @@
+use rand::RngExt;
 use rgb::RGB8;
 use sea_orm::DeriveValueType;
 use std::fmt::{Debug, Display};
@@ -47,5 +48,16 @@ impl From<RGB8> for Color {
 impl From<Color> for RGB8 {
     fn from(c: Color) -> Self {
         c.to_rgb8()
+    }
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        let mut rng = rand::rng();
+        let r = rng.random_range(0..=255);
+        let g = rng.random_range(0..=255);
+        let b = rng.random_range(0..=255);
+
+        Self::new(r, g, b)
     }
 }

@@ -10,7 +10,7 @@ use dto::DateTime;
 
 use crate::types::{Link, Zettel};
 
-const DATE_FMT_STR: &str = "%Y-%m-%d %I:%M:%S %p";
+pub(super) const DATE_FMT_STR: &str = "%Y-%m-%d %I:%M:%S %p";
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
 pub struct FrontMatter {

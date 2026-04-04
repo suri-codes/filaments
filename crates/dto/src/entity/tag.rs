@@ -13,6 +13,7 @@ pub struct Model {
     pub id: i64,
     #[sea_orm(unique)]
     pub nano_id: NanoId,
+    #[sea_orm(unique)]
     pub name: String,
     pub color: Color,
     #[sea_orm(has_many, via = "zettel_tag")]
@@ -32,6 +33,9 @@ impl ActiveModelBehavior for ActiveModel {
     {
         if insert && self.nano_id.is_not_set() {
             self.nano_id = Set(NanoId::default());
+        }
+        if insert && self.color.is_not_set() {
+            self.color = Set(Color::default());
         }
         Box::pin(ready(Ok(self)))
     }

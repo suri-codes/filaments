@@ -11,6 +11,7 @@ use tracing::debug;
 use crate::{
     config::Config,
     tui::{Event, Tui, components::Zk},
+    types::KastenHandle,
 };
 
 use super::{components::Component, signal::Signal};
@@ -25,6 +26,7 @@ pub struct App {
     #[allow(dead_code)]
     region: Region,
     last_tick_key_events: Vec<KeyEvent>,
+    kh: KastenHandle,
     signal_tx: UnboundedSender<Signal>,
     signal_rx: UnboundedReceiver<Signal>,
 }
@@ -43,18 +45,19 @@ pub enum Region {
 
 impl App {
     /// Construct a new `App` instance.
-    pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
+    pub async fn new(tick_rate: f64, frame_rate: f64, kh: KastenHandle) -> Result<Self> {
         let (signal_tx, signal_rx) = mpsc::unbounded_channel();
 
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(Zk::new())],
+            components: vec![Box::new(Zk::new(kh.clone()).await?)],
             should_quit: false,
             should_suspend: false,
             config: Config::parse()?,
             region: Region::default(),
             last_tick_key_events: Vec::new(),
+            kh,
             signal_tx,
             signal_rx,
         })
@@ -74,7 +77,7 @@ impl App {
         }
 
         for component in &mut self.components {
-            component.init(tui.size()?)?;
+            component.init(tui.size()?).await?;
         }
 
         let signal_tx = self.signal_tx.clone();
@@ -121,7 +124,7 @@ impl App {
         }
 
         for component in &mut self.components {
-            if let Some(signal) = component.handle_events(Some(event.clone()))? {
+            if let Some(signal) = component.handle_events(Some(event.clone())).await? {
                 signal_tx.send(signal)?;
             }
         }
@@ -157,27 +160,37 @@ impl App {
                 debug!("handling signal: {signal:?}");
             }
 
-            match signal {
+            match signal.clone() {
                 Signal::Tick => {
                     self.last_tick_key_events.drain(..);
                 }
 
                 Signal::Quit => self.should_quit = true,
 
-                Signal::Helix => {
+                Signal::Helix { path } => {
                     tui.exit()?;
 
-                    let hx = spawn(move || -> Result<()> {
-                        Command::new("hx")
-                            .stdin(std::process::Stdio::inherit())
-                            .stdout(std::process::Stdio::inherit())
-                            .stderr(std::process::Stdio::inherit())
-                            .status()?;
+                    let hx = spawn({
+                        let path = path.clone();
+                        move || -> Result<()> {
+                            Command::new("hx")
+                                .stdin(std::process::Stdio::inherit())
+                                .stdout(std::process::Stdio::inherit())
+                                .stderr(std::process::Stdio::inherit())
+                                .arg(path)
+                                .status()?;
 
-                        Ok(())
+                            Ok(())
+                        }
                     });
 
                     hx.join().unwrap().unwrap();
+                    // once we get out of the edit, we need to update the zettel for this
+                    // path and then update the db and the kasten for this stuff
+
+                    self.kh.write().await.process_path(&path).await?;
+
+                    self.signal_tx.send(Signal::ClosedZettel)?;
 
                     tui.terminal.clear()?;
                     tui.enter()?;

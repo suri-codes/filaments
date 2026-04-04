@@ -4,9 +4,11 @@ filaments_dir "{INSERT_HERE}"
 keymap {
 
     Home {
-        q Quit // Quit the application
         <Ctrl-c> Quit // Another way to quit
         <Ctrl-z> Suspend // Suspend the application
-        h Helix
+        up MoveUp
+        down MoveDown
+        enter OpenZettel
+        <Ctrl-n> NewZettel
     }
 }
