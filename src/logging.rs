@@ -4,7 +4,7 @@ use std::{
 };
 
 use color_eyre::eyre::Result;
-use tracing::Level;
+use tracing::{Level, info};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -23,6 +23,8 @@ pub static LOG_FILE: LazyLock<String> = LazyLock::new(|| format!("{}.log", env!(
 /// `FILAMENTS_LOG_LEVEL` env var
 pub fn init() -> Result<()> {
     let directory = config::get_data_dir();
+
+    info!("{directory:#?}");
 
     create_dir_all(&directory)?;
 

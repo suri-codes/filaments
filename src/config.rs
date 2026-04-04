@@ -56,6 +56,8 @@ pub struct Config {
 impl Config {
     /// generates a new config with the provided `filaments_dir`
     pub fn generate(filaments_dir: &Path) -> KdlDocument {
+
+        
         let mut default_config: KdlDocument = DEFAULT_CONFIG
             .parse()
             .expect("Default config should always be a valid KDL document.");

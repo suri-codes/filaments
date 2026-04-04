@@ -106,6 +106,8 @@
             # Set any environment variables for your dev shell
             env = {
               RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
+              FIL_CONFIG = "./.config";
+              FIL_DATA = "./.data";
             };
 
             # Add any shell logic you want executed any time the environment is activated
