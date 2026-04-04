@@ -59,12 +59,13 @@ impl Default for Layouts {
 impl Zk<'_> {
     pub async fn new(kh: KastenHandle) -> Result<Self> {
         let kt = kh.read().await;
+        let ws = kt.ws.clone();
 
         let fetch_all = async || -> Result<Vec<Zettel>> {
             Ok(ZettelEntity::load()
                 .with(TagEntity)
                 .order_by_desc(ZettelColumns::ModifiedAt)
-                .all(&kt.ws.db)
+                .all(&ws.db)
                 .await?
                 .into_iter()
                 .map(Into::into)
@@ -73,9 +74,10 @@ impl Zk<'_> {
 
         let mut zettels: Vec<Zettel> = fetch_all().await?;
 
+        drop(kt);
         if zettels.is_empty() {
-            // we should have a welcome zettel
-            Zettel::new("Welcome!", &kt.ws).await?;
+            let z = Zettel::new("Welcome!", &ws).await?;
+            kh.write().await.process_path(&z.absolute_path(&ws)).await?;
             zettels = fetch_all().await?;
         }
 
@@ -95,6 +97,8 @@ impl Zk<'_> {
             )
             // so technically this might not exist
             .expect("There must always be one atleast one zettel");
+
+        let kt = kh.read().await;
 
         let zettel = kt
             .get_node_by_zettel_id(selected_zettel)

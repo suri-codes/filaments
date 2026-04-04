@@ -80,6 +80,24 @@
           );
       };
 
+      packages = forEachSupportedSystem (
+        { pkgs }:
+        {
+          default = pkgs.rustPlatform.buildRustPackage {
+            pname = "fil";
+            version = "0.1.0";
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+            cargoLock.outputHashes = {
+              "egui_graphs-0.30.0" = "sha256-mJuGENPnDeD8SDNBXZZpLwcqrKlLTxuM6yCCx+1dSko=";
+            };
+
+            nativeBuildInputs = [ pkgs.pkg-config ];
+            buildInputs = [ pkgs.openssl ];
+          };
+        }
+      );
+
       devShells = forEachSupportedSystem (
         { pkgs }:
         {
