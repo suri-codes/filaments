@@ -3,7 +3,7 @@ use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Rect, Size},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -61,6 +61,13 @@ impl Default for Layouts {
 
 #[async_trait]
 impl Component for Viewport<'_> {
+    async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
+        match self.active_region {
+            Region::Zk => self.zk.init(area).await,
+            Region::Todo => self.todo.init(area).await,
+        }
+    }
+
     fn register_signal_handler(&mut self, tx: UnboundedSender<Signal>) -> Result<()> {
         self.signal_tx = Some(tx.clone());
         self.zk.register_signal_handler(tx.clone())?;
@@ -94,8 +101,6 @@ impl Component for Viewport<'_> {
             Region::Todo => self.todo.draw(frame, main_layout),
         }?;
 
-        // frame.render_widget(Block::new().bg(Color::Green), main_layout);
-        // frame.render_widget(self.switcher.clone(), switcher_layout);
         frame.render_widget(self.switcher.clone(), area);
         Ok(())
     }

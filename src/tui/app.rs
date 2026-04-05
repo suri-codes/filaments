@@ -6,7 +6,7 @@ use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::{
     config::Config,
@@ -110,7 +110,10 @@ impl App {
             return Ok(());
         };
 
-        debug!("received event: {event:?}");
+        match event {
+            Event::Tick | Event::Render => trace!("received event: {event:?}"),
+            _ => debug!("received event: {event:?}"),
+        }
 
         let signal_tx = self.signal_tx.clone();
 
