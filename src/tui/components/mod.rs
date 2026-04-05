@@ -13,8 +13,15 @@ use crate::{
 
 /// The zk component
 mod zk;
-
 pub use zk::*;
+
+/// The todo component
+mod todo;
+pub use todo::*;
+
+/// The main view into the app
+mod viewport;
+pub use viewport::*;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 ///

@@ -10,7 +10,10 @@ use tracing::debug;
 
 use crate::{
     config::Config,
-    tui::{Event, Tui, components::Zk},
+    tui::{
+        Event, Tui,
+        components::{Viewport, Zk},
+    },
     types::KastenHandle,
 };
 
@@ -51,7 +54,8 @@ impl App {
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(Zk::new(kh.clone()).await?)],
+            // components: vec![Box::new(Zk::new(kh.clone()).await?)],
+            components: vec![Box::new(Viewport::new(kh.clone()).await?)],
             should_quit: false,
             should_suspend: false,
             config: Config::parse()?,
