@@ -21,7 +21,7 @@ pub struct Viewport<'text> {
     signal_tx: Option<UnboundedSender<Signal>>,
     #[expect(dead_code)]
     kh: KastenHandle,
-    layouts: Layouts,
+    _layouts: Layouts,
     switcher: Switcher<'text>,
     active_region: Region,
     zk: Zk<'text>,
@@ -38,7 +38,7 @@ impl Viewport<'_> {
 
         Ok(Self {
             signal_tx: None,
-            layouts: Layouts::default(),
+            _layouts: Layouts::default(),
             switcher,
             zk: Zk::new(kh.clone()).await?,
             todo: Todo::new(kh.clone()),
@@ -49,13 +49,13 @@ impl Viewport<'_> {
 }
 
 struct Layouts {
-    main_switcher: Layout,
+    _main_switcher: Layout,
 }
 
 impl Default for Layouts {
     fn default() -> Self {
         Self {
-            main_switcher: Layout::vertical(vec![Constraint::Fill(90), Constraint::Min(1)]),
+            _main_switcher: Layout::vertical(vec![Constraint::Fill(90), Constraint::Min(1)]),
         }
     }
 }
@@ -99,17 +99,17 @@ impl Component for Viewport<'_> {
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::Result<()> {
         // figure out how we are to do this after
-        let (main_layout, _switcher_layout) = {
-            let rects = self.layouts.main_switcher.split(area);
-            (rects[0], rects[1])
-        };
+        // let (main_layout, _switcher_layout) = {
+        //     let rects = self.layouts.main_switcher.split(area);
+        //     (rects[0], rects[1])
+        // };
 
         match self.active_region {
-            Region::Zk => self.zk.draw(frame, main_layout),
-            Region::Todo => self.todo.draw(frame, main_layout),
+            Region::Zk => self.zk.draw(frame, area),
+            Region::Todo => self.todo.draw(frame, area),
         }?;
 
-        frame.render_widget(self.switcher.clone(), area);
+        // frame.render_widget(self.switcher.clone(), area);
         Ok(())
     }
 }

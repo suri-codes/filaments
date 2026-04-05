@@ -51,6 +51,5 @@ mod tests {
             .expect("failed to serialize");
 
         println!("{ron_string}");
-        panic!()
     }
 }

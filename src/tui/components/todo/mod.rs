@@ -49,7 +49,8 @@ impl Component for Todo {
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::Result<()> {
-        frame.render_widget(Block::new().fg(Color::Red), area);
+        frame.render_widget(Block::new().bg(Color::Red), area);
+
         Ok(())
     }
 }
