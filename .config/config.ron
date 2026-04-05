@@ -10,13 +10,20 @@
         keybinds: {
             "<Ctrl-n>": NewZettel,
             "enter": OpenZettel,
+            "tab": SwitchTo (
+                        region: Todo
+                    ),
+            
         },
     ),
     todo: (
         keybinds: {
             "j": MoveDown,
             "k": MoveUp,
-            // "<ctrl-d>": HalfPageDown,
+            "tab": SwitchTo (
+                        region: Zk
+                    ),
+                    
         },
     ),
 )

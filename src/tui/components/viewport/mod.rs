@@ -6,6 +6,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect, Size},
 };
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::debug;
 
 use crate::{
     tui::{
@@ -76,6 +77,13 @@ impl Component for Viewport<'_> {
     }
 
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
+        // switch active region
+        if let Signal::SwitchTo { region } = signal {
+            self.active_region = region;
+            self.switcher.select_region(region);
+            debug!("active region switched to : {region}");
+        }
+
         match self.active_region {
             Region::Zk => self.zk.update(signal).await,
             Region::Todo => self.todo.update(signal).await,

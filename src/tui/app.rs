@@ -200,6 +200,10 @@ impl App {
                     tui.enter()?;
                 }
 
+                Signal::SwitchTo { region } => {
+                    self.region = region;
+                }
+
                 Signal::Suspend => self.should_suspend = true,
 
                 Signal::Resume => self.should_suspend = false,
