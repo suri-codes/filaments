@@ -2312,6 +2312,7 @@ dependencies = [
  "serde",
  "signal-hook 0.4.3",
  "strum 0.28.0",
+ "tempfile",
  "tokio",
  "tokio-util",
  "tracing",

@@ -52,48 +52,42 @@ impl Workspace {
     pub async fn initialize(path: impl Into<PathBuf>) -> Result<Self> {
         let path = path.into();
 
-        // create the .filaments folder
         let filaments_dir = path.join(".filaments");
 
+        // create the dir
         create_dir_all(&filaments_dir)
             .await
             .context("Failed to create the filaments directory!")?;
 
-        // create the database inside there
+        let filaments_dir = filaments_dir.canonicalize()?;
+
         File::create(filaments_dir.join("filaments.db")).await?;
 
-        Ok(Self::instansiate(path).await.expect(
-            "Invariant broken. This instantiation call must always work
-                    since we just initialized the workspace.",
+        Ok(Self::instansiate(&path).await.expect(
+            "Invariant broken. This instantiation call must always work \
+         since we just initialized the workspace.",
         ))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        fs::{File, create_dir_all},
-        path::PathBuf,
-    };
-
-    use dto::NanoId;
 
     use crate::types::Workspace;
 
     #[tokio::test]
     async fn test_instantiation() {
-        let path = PathBuf::from("/tmp/filaments/.filaments/filaments.db");
-        create_dir_all(path.parent().unwrap()).unwrap();
-        let _ = File::create(&path).unwrap();
-        let _ws = Workspace::instansiate(&path.parent().unwrap().parent().unwrap())
-            .await
-            .unwrap();
+        let tmp = tempfile::tempdir().unwrap();
+        let filaments_dir = tmp.path().join(".filaments");
+        std::fs::create_dir_all(&filaments_dir).unwrap();
+        std::fs::File::create(filaments_dir.join("filaments.db")).unwrap();
+        let _ws = Workspace::instansiate(tmp.path()).await.unwrap();
     }
 
     #[tokio::test]
     async fn test_initialization() {
-        let path = PathBuf::from(format!("/tmp/filaments/{}", NanoId::default()));
-
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("workspace");
         Workspace::initialize(path)
             .await
             .expect("Should initialize just fine");

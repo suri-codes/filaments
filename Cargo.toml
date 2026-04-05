@@ -86,6 +86,9 @@ ron = "0.12.1"
 anyhow = "1.0.102"
 vergen-gix = {version = "9.1.0", features = ["build", "cargo"]}
 
+[dev-dependencies]
+tempfile = "3"
+
 # patch egui_graphs to have egui 0.34.1
 [patch.crates-io]
 egui_graphs = { git = "https://github.com/suri-codes/egui_graphs", rev = "3327417007520300782574e3d6bc377bbafa8b5a" }
