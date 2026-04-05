@@ -9,7 +9,7 @@ use egui_graphs::{
 use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
 use std::{cmp::max, collections::HashMap, path::Path, sync::Arc};
 use tokio::sync::RwLock;
-use tracing::{error, info};
+use tracing::{debug, error};
 
 use crate::types::Workspace;
 
@@ -57,7 +57,7 @@ impl Kasten {
             .map(|entry| entry.path())
             .collect::<Vec<_>>();
 
-        info!(
+        debug!(
             "indexing the following paths {paths:#?} at root {:#?}",
             ws.root
         );
@@ -83,7 +83,7 @@ impl Kasten {
             })
             .collect::<Vec<Zettel>>();
 
-        info!("zettels: {zettels:#?}");
+        debug!("parsed zettels: {zettels:#?}");
 
         // capacity!
         let mut graph: ZkGraph = ZkGraph::from(&StableGraph::with_capacity(
@@ -111,7 +111,7 @@ impl Kasten {
             }
         }
 
-        info!("parsed graph: {graph:#?}");
+        debug!("parsed graph: {graph:#?}");
 
         Ok(Self {
             _private: (),

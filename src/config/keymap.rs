@@ -178,35 +178,76 @@ mod test {
 
     // use crate::tui::{KeyMap, Region, Signal};
 
+    use crossterm::event::{KeyEvent, KeyModifiers};
+
+    use crate::{
+        config::{file::RonConfig, keymap::KeyMap},
+        tui::{Region, Signal},
+    };
+
     #[test]
-    fn test_quit_in_home_region() {
-        // let keymap_str = "
-        //     keymap {
-        //         Todo {
-        //             q Quit
-        //             <Ctrl-C> Quit
-        //         }
-        //     }
-        // ";
+    fn test_quit() {
+        let conf_str = r#"
+(
+    directory: "./ZettelKasten",
+    global_key_binds: {
+        "ctrl-c": Quit,
+        "ctrl-z": Suspend,
+        "up": MoveUp,
+        "down": MoveDown,
+    },
+    zk: (
+        keybinds: {
+            "<Ctrl-n>": NewZettel,
+            "enter": OpenZettel,
+            "tab": SwitchTo (
+                        region: Todo
+                    ),
+            
+        },
+    ),
+    todo: (
+        keybinds: {
+            "j": MoveDown,
+            "k": MoveUp,
+            "tab": SwitchTo (
+                        region: Zk
+                    ),
+                    
+        },
+    ),
+)
+        "#;
 
-        // let kdl: &KdlNode = &keymap_str
-        //     .parse()
-        //     .expect("Keymap_str should be a valid KDL document");
+        let config: RonConfig = ron::from_str(conf_str).unwrap();
+        let keymap: KeyMap = (&config).try_into().unwrap();
 
-        // let keymap: KeyMap = kdl.try_into().expect("Must be a valid keymap");
+        let map = keymap
+            .get(&Region::Todo)
+            .expect("Home region must exist in keymap");
 
-        // let map = keymap
-        //     .get(&Region::Todo)
-        //     .expect("Home region must exist in keymap");
+        let signal = map
+            .get(&vec![KeyEvent::new_with_kind(
+                crossterm::event::KeyCode::Char('c'),
+                KeyModifiers::CONTROL,
+                crossterm::event::KeyEventKind::Press,
+            )])
+            .expect("Must resolve to a signal");
 
-        // let signal = map
-        //     .get(&vec![KeyEvent::new_with_kind(
-        //         crossterm::event::KeyCode::Char('q'),
-        //         KeyModifiers::empty(),
-        //         crossterm::event::KeyEventKind::Press,
-        //     )])
-        //     .expect("Must resolve to a signal");
+        assert_eq!(*signal, Signal::Quit);
 
-        // assert_eq!(*signal, Signal::Quit);
+        let map = keymap
+            .get(&Region::Zk)
+            .expect("Home region must exist in keymap");
+
+        let signal = map
+            .get(&vec![KeyEvent::new_with_kind(
+                crossterm::event::KeyCode::Char('c'),
+                KeyModifiers::CONTROL,
+                crossterm::event::KeyEventKind::Press,
+            )])
+            .expect("Must resolve to a signal");
+
+        assert_eq!(*signal, Signal::Quit);
     }
 }
