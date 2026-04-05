@@ -1,4 +1,5 @@
-use std::{ collections::HashMap,
+use std::{
+    collections::HashMap,
     ops::{Deref, DerefMut},
 };
 
@@ -178,7 +179,7 @@ mod test {
     fn test_quit_in_home_region() {
         let keymap_str = "
             keymap {
-                Home {
+                Todo {
                     q Quit
                     <Ctrl-C> Quit
                 }
@@ -192,7 +193,7 @@ mod test {
         let keymap: KeyMap = kdl.try_into().expect("Must be a valid keymap");
 
         let map = keymap
-            .get(&Region::Home)
+            .get(&Region::Todo)
             .expect("Home region must exist in keymap");
 
         let signal = map

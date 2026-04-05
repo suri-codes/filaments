@@ -18,6 +18,16 @@ pub struct Todo {
     layouts: Layouts,
 }
 
+impl Todo {
+    pub fn new(kh: KastenHandle) -> Self {
+        Self {
+            kh,
+            layouts: Layouts::default(),
+            signal_tx: None,
+        }
+    }
+}
+
 struct Layouts {
     main: Layout,
 }

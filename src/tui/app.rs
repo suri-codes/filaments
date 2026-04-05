@@ -42,8 +42,8 @@ pub struct App {
 )]
 pub enum Region {
     #[default]
-    Home,
     Zk,
+    Todo,
 }
 
 impl App {

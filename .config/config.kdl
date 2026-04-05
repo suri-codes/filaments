@@ -3,7 +3,7 @@ filaments_dir "./ZettelKasten"
 
 keymap {
 
-    Home {
+    Zk {
         <Ctrl-c> Quit // Another way to quit
         <Ctrl-z> Suspend // Suspend the application
         up MoveUp

@@ -18,6 +18,6 @@ impl Widget for Preview<'_> {
     where
         Self: Sized,
     {
-        self.content.style(Style::new()).render(area, buf);
+        self.content.render(area, buf);
     }
 }
