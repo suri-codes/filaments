@@ -1,4 +1,4 @@
-use ratatui::{style::Style, text::Text, widgets::Widget};
+use ratatui::{text::Text, widgets::Widget};
 
 #[derive(Debug, Clone)]
 pub struct Preview<'text> {
@@ -18,6 +18,6 @@ impl Widget for Preview<'_> {
     where
         Self: Sized,
     {
-        self.content.style(Style::new()).render(area, buf);
+        self.content.render(area, buf);
     }
 }

@@ -100,9 +100,12 @@ impl Zk<'_> {
 
         let kt = kh.read().await;
 
+        info!("{selected_zettel:#?}");
+        info!("{kt:#?}");
+
         let zettel = kt
             .get_node_by_zettel_id(selected_zettel)
-            .expect("")
+            .expect("kasten should have the selected zettel")
             .payload();
 
         let preview = Preview::from(
@@ -315,7 +318,7 @@ impl Component for Zk<'_> {
     async fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
         // NOTE: this is hardcoded for now, but I honestly think people should not
         // be able to change these binds, opinionated software or something...
-        if !(key.code.is_up() || key.code.is_down() || key.code.is_enter()) {
+        if !(key.code.is_up() || key.code.is_down() || key.code.is_enter() || key.code.is_tab()) {
             self.search.query.input(key);
             self.update_with_respect_to_query().await?;
         }

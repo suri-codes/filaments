@@ -71,7 +71,6 @@ directories = "6.0.0"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 tracing-error = "0.2.1"
 clap = { version = "4.5.60", features = ["derive", "cargo", "wrap_help", "unicode", "string", "unstable-styles"] }
-kdl = "6.5.0"
 dto = {path="./crates/dto"}
 eframe = "0.34.1"
 async-trait = "0.1.89"
@@ -81,6 +80,7 @@ rand = "0.10.0"
 pulldown-cmark = { version = "0.13.3", features = ["simd"] }
 ratatui-textarea = "0.8.0"
 nucleo-matcher = "0.3.1"
+ron = "0.12.1"
 
 [build-dependencies]
 anyhow = "1.0.102"

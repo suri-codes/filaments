@@ -6,11 +6,11 @@ use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::{
     config::Config,
-    tui::{Event, Tui, components::Zk},
+    tui::{Event, Tui, components::Viewport},
     types::KastenHandle,
 };
 
@@ -39,8 +39,8 @@ pub struct App {
 )]
 pub enum Region {
     #[default]
-    Home,
     Zk,
+    Todo,
 }
 
 impl App {
@@ -51,7 +51,8 @@ impl App {
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(Zk::new(kh.clone()).await?)],
+            // components: vec![Box::new(Zk::new(kh.clone()).await?)],
+            components: vec![Box::new(Viewport::new(kh.clone()).await?)],
             should_quit: false,
             should_suspend: false,
             config: Config::parse()?,
@@ -109,7 +110,10 @@ impl App {
             return Ok(());
         };
 
-        debug!("received event: {event:?}");
+        match event {
+            Event::Tick | Event::Render => trace!("received event: {event:?}"),
+            _ => debug!("received event: {event:?}"),
+        }
 
         let signal_tx = self.signal_tx.clone();
 
@@ -194,6 +198,10 @@ impl App {
 
                     tui.terminal.clear()?;
                     tui.enter()?;
+                }
+
+                Signal::SwitchTo { region } => {
+                    self.region = region;
                 }
 
                 Signal::Suspend => self.should_suspend = true,

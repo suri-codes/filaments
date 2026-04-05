@@ -1,0 +1,29 @@
+(
+    directory: "./ZettelKasten",
+    global_key_binds: {
+        "ctrl-c": Quit,
+        "ctrl-z": Suspend,
+        "up": MoveUp,
+        "down": MoveDown,
+    },
+    zk: (
+        keybinds: {
+            "<Ctrl-n>": NewZettel,
+            "enter": OpenZettel,
+            "tab": SwitchTo (
+                        region: Todo
+                    ),
+            
+        },
+    ),
+    todo: (
+        keybinds: {
+            "j": MoveDown,
+            "k": MoveUp,
+            "tab": SwitchTo (
+                        region: Zk
+                    ),
+                    
+        },
+    ),
+)

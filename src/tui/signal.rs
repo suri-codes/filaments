@@ -5,6 +5,8 @@ use strum::Display;
 
 use serde::{Deserialize, Serialize};
 
+use crate::tui::Region;
+
 /// The varying signals that can be emitted.
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
 pub enum Signal {
@@ -17,6 +19,10 @@ pub enum Signal {
     ClearScreen,
     Error(String),
     Help,
+
+    SwitchTo {
+        region: Region,
+    },
 
     // movement
     MoveDown,
