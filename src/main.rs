@@ -13,7 +13,7 @@ use crate::{
 };
 use clap::Parser;
 use tokio::sync::RwLock;
-use tracing::debug;
+use tracing::info;
 
 mod cli;
 mod gui;
@@ -41,11 +41,11 @@ fn main() -> color_eyre::Result<()> {
     // create the kasten handle
     let kh: KastenHandle = rt.block_on(async {
         let cfg = Config::parse()?;
-        let ws = Workspace::instansiate(cfg.app_config.workspace).await?;
+        let ws = Workspace::instansiate(cfg.fil_dir).await?;
         Ok::<KastenHandle, color_eyre::Report>(Arc::new(RwLock::new(Kasten::index(ws).await?)))
     })?;
 
-    debug!("{kh:#?}");
+    info!("{kh:#?}");
 
     // then we spawn the tui on its own thread
     let tui_handle = std::thread::spawn({

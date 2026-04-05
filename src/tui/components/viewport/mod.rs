@@ -4,8 +4,6 @@ use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::{Color, Stylize},
-    widgets::Block,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -20,6 +18,7 @@ use crate::{
 
 pub struct Viewport<'text> {
     signal_tx: Option<UnboundedSender<Signal>>,
+    #[expect(dead_code)]
     kh: KastenHandle,
     layouts: Layouts,
     switcher: Switcher<'text>,
@@ -84,7 +83,8 @@ impl Component for Viewport<'_> {
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::Result<()> {
-        let (main_layout, switcher_layout) = {
+        // figure out how we are to do this after
+        let (main_layout, _switcher_layout) = {
             let rects = self.layouts.main_switcher.split(area);
             (rects[0], rects[1])
         };

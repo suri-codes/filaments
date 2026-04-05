@@ -24,17 +24,17 @@ impl Commands {
                 Workspace::initialize(dir.clone()).await?;
 
                 // write config that sets the filaments directory to current dir!
-                let config_kdl = dbg! {Config::generate(&dir)};
+                let config_str = dbg! {Config::generate(&dir)}?;
 
                 // create the config dir
                 let config_dir = get_config_dir();
 
                 create_dir_all(config_dir).expect("creating the config dir should not error");
 
-                let mut config_file = File::create(get_config_dir().join("config.kdl"))
+                let mut config_file = File::create(get_config_dir().join("config.ron"))
                     .context("Failed to create config file")?;
 
-                write!(config_file, "{config_kdl}")?;
+                write!(config_file, "{config_str}")?;
 
                 println!("wrote config to {config_file:#?}");
 
@@ -44,7 +44,7 @@ impl Commands {
 
             Self::Zettel(zettel_sub_command) => {
                 let conf = Config::parse()?;
-                let ws = Workspace::instansiate(conf.app_config.workspace).await?;
+                let ws = Workspace::instansiate(conf.fil_dir).await?;
 
                 match zettel_sub_command {
                     ZettelSubcommand::New { title } => {

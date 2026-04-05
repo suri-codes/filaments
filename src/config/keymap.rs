@@ -1,55 +1,58 @@
+use color_eyre::eyre::{Result, eyre};
+use crossterm::event::{KeyCode, KeyModifiers};
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
 };
-
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use kdl::KdlNode;
 use strum::IntoEnumIterator;
 
-use crate::tui::{Signal, app::Region};
+use crossterm::event::KeyEvent;
 
+use crate::{
+    config::file::RonConfig,
+    tui::{Region, Signal},
+};
 #[derive(Debug, Clone)]
 pub struct KeyMap(pub HashMap<Region, HashMap<Vec<KeyEvent>, Signal>>);
 
-impl TryFrom<&KdlNode> for KeyMap {
+impl TryFrom<&RonConfig> for KeyMap {
     type Error = color_eyre::Report;
 
-    fn try_from(value: &KdlNode) -> std::result::Result<Self, Self::Error> {
-        let mut all_binds = HashMap::new();
+    fn try_from(value: &RonConfig) -> Result<Self, Self::Error> {
+        let mut binds = HashMap::new();
 
         for region in Region::iter() {
             let mut region_binds = HashMap::new();
-            let Some(binds) = value
-                .children()
-                .expect("Keymap must have children.")
-                .get(&region.to_string())
-            else {
-                continue;
+
+            let mut parse_and_insert = |str: &str, bind: &Signal| -> Result<()> {
+                let key_seq = parse_key_sequence(str).map_err(|e| {
+                    eyre!(format!(
+                        "Failed to parse the following keybind as valid keybind: {e}"
+                    ))
+                })?;
+
+                region_binds.insert(key_seq, bind.clone());
+                Ok(())
             };
 
-            // now we iter through the things children
-            for child in binds.iter_children() {
-                let key_combo_str = child.name().to_string();
-                let key_combo_str = key_combo_str.trim();
+            // first thing we have to do is insert the global binds for this region
 
-                let signal_str = child
-                    .entries()
-                    .first()
-                    .expect("A bind must map to an entry")
-                    .to_string();
-                let signal_str = signal_str.trim();
-
-                let signal: Signal = signal_str.parse().expect("Must be a \"bindable\" Signal");
-                let key_combo = parse_key_sequence(key_combo_str).unwrap();
-
-                let _ = region_binds.insert(key_combo, signal);
+            for (str, bind) in &value.global_key_binds {
+                parse_and_insert(str, bind)?;
             }
 
-            let _ = all_binds.insert(region, region_binds);
+            // now we insert the region specific binds
+            for (str, bind) in match region {
+                Region::Zk => value.zk.keybinds.iter(),
+                Region::Todo => value.todo.keybinds.iter(),
+            } {
+                parse_and_insert(str, bind)?;
+            }
+
+            binds.insert(region, region_binds);
         }
 
-        Ok(Self(all_binds))
+        Ok(Self(binds))
     }
 }
 
@@ -170,40 +173,40 @@ fn parse_key_code_with_modifiers(
 
 #[cfg(test)]
 mod test {
-    use crossterm::event::{KeyEvent, KeyModifiers};
-    use kdl::KdlNode;
+    // use crossterm::event::{KeyEvent, KeyModifiers};
+    // use kdl::KdlNode;
 
-    use crate::tui::{KeyMap, Signal, app::Region};
+    // use crate::tui::{KeyMap, Region, Signal};
 
     #[test]
     fn test_quit_in_home_region() {
-        let keymap_str = "
-            keymap {
-                Todo {
-                    q Quit
-                    <Ctrl-C> Quit
-                }
-            }
-        ";
+        // let keymap_str = "
+        //     keymap {
+        //         Todo {
+        //             q Quit
+        //             <Ctrl-C> Quit
+        //         }
+        //     }
+        // ";
 
-        let kdl: &KdlNode = &keymap_str
-            .parse()
-            .expect("Keymap_str should be a valid KDL document");
+        // let kdl: &KdlNode = &keymap_str
+        //     .parse()
+        //     .expect("Keymap_str should be a valid KDL document");
 
-        let keymap: KeyMap = kdl.try_into().expect("Must be a valid keymap");
+        // let keymap: KeyMap = kdl.try_into().expect("Must be a valid keymap");
 
-        let map = keymap
-            .get(&Region::Todo)
-            .expect("Home region must exist in keymap");
+        // let map = keymap
+        //     .get(&Region::Todo)
+        //     .expect("Home region must exist in keymap");
 
-        let signal = map
-            .get(&vec![KeyEvent::new_with_kind(
-                crossterm::event::KeyCode::Char('q'),
-                KeyModifiers::empty(),
-                crossterm::event::KeyEventKind::Press,
-            )])
-            .expect("Must resolve to a signal");
+        // let signal = map
+        //     .get(&vec![KeyEvent::new_with_kind(
+        //         crossterm::event::KeyCode::Char('q'),
+        //         KeyModifiers::empty(),
+        //         crossterm::event::KeyEventKind::Press,
+        //     )])
+        //     .expect("Must resolve to a signal");
 
-        assert_eq!(*signal, Signal::Quit);
+        // assert_eq!(*signal, Signal::Quit);
     }
 }

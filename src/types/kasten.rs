@@ -9,6 +9,7 @@ use egui_graphs::{
 use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
 use std::{cmp::max, collections::HashMap, path::Path, sync::Arc};
 use tokio::sync::RwLock;
+use tracing::{error, info};
 
 use crate::types::Workspace;
 
@@ -56,6 +57,11 @@ impl Kasten {
             .map(|entry| entry.path())
             .collect::<Vec<_>>();
 
+        info!(
+            "indexing the following paths {paths:#?} at root {:#?}",
+            ws.root
+        );
+
         let zettel_tasks = paths
             .into_iter()
             .map(|path| {
@@ -68,8 +74,16 @@ impl Kasten {
         let zettels = futures::future::join_all(zettel_tasks)
             .await
             .into_iter()
-            .filter_map(|result| result.ok()?.ok())
+            .filter_map(|result| {
+                result
+                    .inspect_err(|e| error!("Failed to join on zettel task parsing: {e:#?}"))
+                    .ok()?
+                    .inspect_err(|e| error!("Failed to parse file into zettel: {e:#?}"))
+                    .ok()
+            })
             .collect::<Vec<Zettel>>();
+
+        info!("zettels: {zettels:#?}");
 
         // capacity!
         let mut graph: ZkGraph = ZkGraph::from(&StableGraph::with_capacity(
@@ -96,6 +110,8 @@ impl Kasten {
                 graph.add_edge(*src, *dst, link.clone());
             }
         }
+
+        info!("parsed graph: {graph:#?}");
 
         Ok(Self {
             _private: (),

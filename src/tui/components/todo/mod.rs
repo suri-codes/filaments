@@ -12,6 +12,7 @@ use crate::{
     types::KastenHandle,
 };
 
+#[expect(dead_code)]
 pub struct Todo {
     signal_tx: Option<UnboundedSender<Signal>>,
     kh: KastenHandle,
@@ -28,6 +29,7 @@ impl Todo {
     }
 }
 
+#[expect(dead_code)]
 struct Layouts {
     main: Layout,
 }
@@ -42,7 +44,7 @@ impl Default for Layouts {
 
 #[async_trait]
 impl Component for Todo {
-    async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
+    async fn update(&mut self, _signal: Signal) -> color_eyre::Result<Option<Signal>> {
         Ok(None)
     }
 

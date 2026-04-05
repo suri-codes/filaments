@@ -1,4 +1,4 @@
-use ratatui::{style::Style, text::Text, widgets::Widget};
+use ratatui::{text::Text, widgets::Widget};
 
 #[derive(Debug, Clone)]
 pub struct Preview<'text> {

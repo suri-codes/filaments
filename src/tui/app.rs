@@ -10,10 +10,7 @@ use tracing::debug;
 
 use crate::{
     config::Config,
-    tui::{
-        Event, Tui,
-        components::{Viewport, Zk},
-    },
+    tui::{Event, Tui, components::Viewport},
     types::KastenHandle,
 };
 

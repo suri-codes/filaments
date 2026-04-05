@@ -100,9 +100,12 @@ impl Zk<'_> {
 
         let kt = kh.read().await;
 
+        info!("{selected_zettel:#?}");
+        info!("{kt:#?}");
+
         let zettel = kt
             .get_node_by_zettel_id(selected_zettel)
-            .expect("")
+            .expect("kasten should have the selected zettel")
             .payload();
 
         let preview = Preview::from(
