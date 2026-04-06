@@ -7,6 +7,7 @@ mod m20260319_002245_task_table;
 mod m20260323_002518_zettel_table;
 mod m20260327_175853_tag_table;
 mod m20260327_180618_zettel_tag_table;
+mod m20260406_200424_remove_path_from_zettel;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260323_002518_zettel_table::Migration),
             Box::new(m20260327_175853_tag_table::Migration),
             Box::new(m20260327_180618_zettel_tag_table::Migration),
+            Box::new(m20260406_200424_remove_path_from_zettel::Migration),
         ]
     }
 }

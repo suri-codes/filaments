@@ -1,24 +1,24 @@
 (
     directory: "/Users/suri/dev/projects/filaments/ZettelKasten",
     global_key_binds: {
-        "up": MoveUp,
-        "ctrl-c": Quit,
-        "ctrl-z": Suspend,
         "down": MoveDown,
+        "up": MoveUp,
+        "ctrl-z": Suspend,
+        "ctrl-c": Quit,
     },
     zk: (
         keybinds: {
-            "enter": OpenZettel,
             "tab": SwitchTo(
                 region: Todo,
             ),
             "<Ctrl-n>": NewZettel,
+            "enter": OpenZettel,
         },
     ),
     todo: (
         keybinds: {
-            "k": MoveUp,
             "j": MoveDown,
+            "k": MoveUp,
             "tab": SwitchTo(
                 region: Zk,
             ),

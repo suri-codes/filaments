@@ -22,7 +22,6 @@ async fn test_zettel_tag_insert() {
     let _: ZettelModel = ZettelActiveModel {
         // nano_id: Set(NanoId::default()),
         title: Set("something1".to_owned()),
-        file_path: Set("/voo/doo".to_owned()),
         ..Default::default()
     }
     .insert(&db)
@@ -31,7 +30,6 @@ async fn test_zettel_tag_insert() {
 
     let x = ZettelActiveModel::builder()
         .set_title("Hello")
-        .set_file_path("/voo/doo")
         // .add_tag(
         //     TagActiveModel::builder()
         //         .set_name("Hi")
@@ -46,7 +44,6 @@ async fn test_zettel_tag_insert() {
     let _: ZettelModel = ZettelActiveModel {
         // nano_id: Set(NanoId::default()),
         title: Set("nomething2".to_owned()),
-        file_path: Set("/voo/doo".to_owned()),
         ..Default::default()
     }
     .insert(&db)

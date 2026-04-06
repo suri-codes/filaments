@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use dto::{
     DatabaseConnection, DateTime, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx,
@@ -25,8 +25,6 @@ pub struct Zettel {
     _private: (),
     pub id: ZettelId,
     pub title: String,
-    /// a workspace-local file path, needs to be canonicalized before usage
-    pub file_path: PathBuf,
     pub created_at: DateTime,
     pub modified_at: DateTime,
     pub tags: Vec<Tag>,
@@ -64,7 +62,6 @@ impl Zettel {
 
         let inserted = ZettelActiveModel::builder()
             .set_title(title.clone())
-            .set_file_path(local_file_path)
             .set_nano_id(nano_id)
             .insert(&kt.db)
             .await?;
@@ -113,12 +110,14 @@ impl Zettel {
         &idx.get_zod(&self.id).path
     }
 
+    /// Get the formatted creation datetime for this `Zettel`
     pub fn created_at(&self) -> String {
         self.created_at
             .format(frontmatter::DATE_FMT_STR)
             .to_string()
     }
 
+    /// Get the formatted modified datetime for this `Zettel`
     pub fn modified_at(&self) -> String {
         self.modified_at
             .format(frontmatter::DATE_FMT_STR)
@@ -138,7 +137,6 @@ impl From<ZettelModelEx> for Zettel {
             _private: (),
             id: value.nano_id.into(),
             title: value.title,
-            file_path: value.file_path.into(),
             created_at: value.created_at,
             modified_at: value.modified_at,
             tags: value.tags.into_iter().map(Into::into).collect(),

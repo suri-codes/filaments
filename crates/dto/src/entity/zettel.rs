@@ -15,7 +15,6 @@ pub struct Model {
     #[sea_orm(unique)]
     pub nano_id: NanoId,
     pub title: String,
-    pub file_path: String,
     pub created_at: DateTime,
     pub modified_at: DateTime,
     #[sea_orm(has_one)]

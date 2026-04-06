@@ -6,3 +6,4 @@ clippy
 dir
 env
 eyre
+zettel
