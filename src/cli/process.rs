@@ -44,7 +44,6 @@ impl Commands {
 
             Self::Zettel(zettel_sub_command) => {
                 let conf = Config::parse()?;
-                // let ws = Workspace::instansiate(conf.fil_dir).await?;
                 let mut kt = Kasten::instansiate(conf.fil_dir).await?;
 
                 match zettel_sub_command {

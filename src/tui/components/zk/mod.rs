@@ -105,9 +105,6 @@ impl Zk<'_> {
 
         let preview = Preview::from(zettel.content(&kt.index).clone());
 
-        // okay now that we have the zettel we need to construct the zettel out of this id
-        let zettel_view: ZettelView = zettel.into();
-
         drop(kt);
 
         Ok(Self {
@@ -116,7 +113,7 @@ impl Zk<'_> {
             kh,
             layouts: Layouts::default(),
             zettel_list,
-            zettel_view,
+            zettel_view: zettel.into(),
             preview,
         })
     }
@@ -140,11 +137,10 @@ impl Zk<'_> {
             .await?
             .context("Unknown Behaviour, A selected zettel got deleted somehow.")?;
 
-        self.zettel_view = zettel.into();
-
         self.preview = zettel.content(&kh.index).clone().into();
-
         drop(kh);
+
+        self.zettel_view = zettel.into();
 
         Ok(())
     }

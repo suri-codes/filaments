@@ -96,5 +96,13 @@ mod tests {
             .expect("Should be able to parse the test path just file");
 
         assert_eq!(id.0, "abcdef".into());
+
+        let path = PathBuf::from("/what/the/fuck/are/you/abcdef.md");
+
+        let id: ZettelId = path
+            .try_into()
+            .expect("Should be able to parse the test path just file");
+
+        assert_eq!(id.0, "abcdef".into());
     }
 }

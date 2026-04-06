@@ -34,7 +34,6 @@ impl Kasten {
     /// at that path.
     pub async fn instansiate(root: impl Into<PathBuf>) -> Result<Self> {
         let root = root.into();
-
         let db_conn_string = format!(
             "sqlite://{}",
             root.clone()
