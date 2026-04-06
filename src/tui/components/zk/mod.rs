@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use color_eyre::eyre::{ContextCompat, Result};
+use color_eyre::eyre::{Context as _, ContextCompat, Result};
 use crossterm::event::KeyEvent;
 use dto::{QueryOrder, TagEntity, ZettelColumns, ZettelEntity};
 use ratatui::{prelude::*, widgets::ListState};
@@ -243,7 +243,10 @@ impl Component for Zk<'_> {
                 let mut kt = self.kh.write().await;
 
                 // we create the zettel with the query as the
-                let z = Zettel::new(self.search.query(), &mut kt).await?;
+                let z = Zettel::new(self.search.query(), &mut kt)
+                    .await
+                    .with_context(|| "Failed to create a new Zettel!")?;
+
                 let path = z.absolute_path(&kt.index).to_path_buf();
 
                 drop(kt);
@@ -258,6 +261,13 @@ impl Component for Zk<'_> {
                     .selected()
                     .expect("This must be the zettel we just edited");
 
+                // regenerate a fresh zettel list
+                self.zettel_list = ZettelList::new(
+                    self.get_zettels_by_current_query().await?,
+                    self.zettel_list.state,
+                    self.zettel_list.width,
+                );
+
                 let Some(zid) = self.zettel_list.id_list.get(selected) else {
                     return Ok(None);
                 };
@@ -271,13 +281,6 @@ impl Component for Zk<'_> {
                 // reset the state of the component
                 self.search.clear_query();
                 self.zettel_list.state.select_first();
-
-                // regenerate a fresh zettel list
-                self.zettel_list = ZettelList::new(
-                    self.get_zettels_by_current_query().await?,
-                    self.zettel_list.state,
-                    self.zettel_list.width,
-                );
 
                 self.zettel_view = ZettelView::from(&zettel);
                 self.preview = Preview::from(zettel.content(&kt.index).clone());

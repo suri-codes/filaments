@@ -49,7 +49,14 @@ impl Index {
                 let id: ZettelId = path.as_path().try_into()?;
                 let (fm, body) = FrontMatter::extract_from_file(&path)?;
 
-                Ok((id, ZettelOnDisk { fm, body, path }))
+                Ok((
+                    id,
+                    ZettelOnDisk {
+                        fm,
+                        body,
+                        path: path.canonicalize()?,
+                    },
+                ))
             })
             .collect::<Result<Vec<_>>>()?
             .into_iter()
@@ -165,8 +172,6 @@ impl Index {
         }
         Ok(())
     }
-
-    //TODO:need to process
 
     pub fn get_zod(&self, zid: &ZettelId) -> &ZettelOnDisk {
         self.zods.get(zid).expect("Invariant broken. Any zid we lookup must exist in the index, otherwise the db is corrupt or not sync'd.")

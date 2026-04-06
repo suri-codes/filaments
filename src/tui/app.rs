@@ -1,6 +1,6 @@
 use std::{process::Command, thread::spawn};
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Context, Result};
 use crossterm::event::KeyEvent;
 use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
@@ -192,7 +192,20 @@ impl App {
                     // once we get out of the edit, we need to update the zettel for this
                     // path and then update the db and the kasten for this stuff
 
-                    self.kh.write().await.process_path(&path).await?;
+                    self.kh
+                        .write()
+                        .await
+                        .process_path(&path)
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "Failed to process the path
+                        for this zettel: {}",
+                                path.display()
+                            )
+                        })?;
+
+                    debug!("successfully processed path: {}", path.display());
 
                     self.signal_tx.send(Signal::ClosedZettel)?;
 

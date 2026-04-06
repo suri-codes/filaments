@@ -11,7 +11,7 @@ use tokio::{
 };
 use tracing::debug;
 
-use crate::types::{Index, ZettelId};
+use crate::types::{FrontMatter, Index, ZettelId, index::ZettelOnDisk};
 
 #[derive(Debug, Clone)]
 pub struct Kasten {
@@ -91,11 +91,23 @@ impl Kasten {
         //NOTE: need to clone to get around borrowing rules but
         // ideally we dont have to do this, kind of cringe imo.
 
-        let path = path.as_ref();
-        let zid = ZettelId::try_from(path)?;
+        let path = path.as_ref().canonicalize()?;
+        let zid = ZettelId::try_from(path.as_path())?;
+
+        if !self.index.zods.contains_key(&zid) {
+            let (fm, body) = FrontMatter::extract_from_file(&path)?;
+            self.index.zods.insert(
+                zid.clone(),
+                ZettelOnDisk {
+                    fm,
+                    body,
+                    path: path.clone(),
+                },
+            );
+        }
 
         // incase the path of the zettel changed
-        self.index.update_path_for_zid(&zid, path.to_path_buf());
+        self.index.update_path_for_zid(&zid, path.clone());
         // let the index process the zettel, basically update the internal state of the zod
         self.index.process_zid(&zid)?;
         // and then we sync tags

@@ -4,7 +4,7 @@ use dto::{
     DatabaseConnection, DateTime, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx,
 };
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Context, Result};
 use dto::NanoId;
 use tokio::{fs::File, io::AsyncWriteExt};
 
@@ -53,8 +53,14 @@ impl Zettel {
 
         let local_file_path = format!("{nano_id}.md");
 
+        let absolute_file_path = kt.root.clone().join(&local_file_path);
+
         // now we have to create the file
-        let mut file = File::create_new(kt.root.clone().join(&local_file_path)).await?;
+        let mut file = File::create_new(&absolute_file_path)
+            .await
+            .with_context(|| {
+                format!("Failed to create file at local file path: {local_file_path}")
+            })?;
 
         let inserted = ZettelActiveModel::builder()
             .set_title(title.clone())
@@ -79,7 +85,14 @@ impl Zettel {
 
         file.write_all(front_matter.to_string().as_bytes()).await?;
 
-        kt.process_path(zettel.file_path.clone()).await?;
+        kt.process_path(&absolute_file_path)
+            .await
+            .with_context(|| {
+                format!(
+                    "Kasten fails to process new Zettel at path: {}",
+                    absolute_file_path.display(),
+                )
+            })?;
 
         Ok(zettel.into())
     }
