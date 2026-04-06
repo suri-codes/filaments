@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{ContextCompat, Result};
 use crossterm::event::KeyEvent;
 use dto::{QueryOrder, TagEntity, ZettelColumns, ZettelEntity};
 use ratatui::{prelude::*, widgets::ListState};
@@ -58,14 +58,11 @@ impl Default for Layouts {
 
 impl Zk<'_> {
     pub async fn new(kh: KastenHandle) -> Result<Self> {
-        let kt = kh.read().await;
-        let ws = kt.ws.clone();
-
         let fetch_all = async || -> Result<Vec<Zettel>> {
             Ok(ZettelEntity::load()
                 .with(TagEntity)
                 .order_by_desc(ZettelColumns::ModifiedAt)
-                .all(&ws.db)
+                .all(&kh.read().await.db)
                 .await?
                 .into_iter()
                 .map(Into::into)
@@ -74,10 +71,8 @@ impl Zk<'_> {
 
         let mut zettels: Vec<Zettel> = fetch_all().await?;
 
-        drop(kt);
         if zettels.is_empty() {
-            let z = Zettel::new("Welcome!", &ws).await?;
-            kh.write().await.process_path(&z.absolute_path(&ws)).await?;
+            let _ = Zettel::new("Welcome!", &mut *kh.write().await).await?;
             zettels = fetch_all().await?;
         }
 
@@ -85,7 +80,7 @@ impl Zk<'_> {
         // stuff inside the init function
         let mut l_state = ListState::default();
         l_state.select_first();
-        let zettel_list = ZettelList::new(zettels, l_state, 0);
+        let zettel_list = ZettelList::new(zettels.clone(), l_state, 0);
 
         let selected_zettel = zettel_list
             .id_list
@@ -103,37 +98,26 @@ impl Zk<'_> {
         info!("{selected_zettel:#?}");
         info!("{kt:#?}");
 
-        let zettel = kt
-            .get_node_by_zettel_id(selected_zettel)
-            .expect("kasten should have the selected zettel")
-            .payload();
+        let zettel = zettels
+            .iter()
+            .find(|&z| &z.id == selected_zettel)
+            .expect("we selected it out of the list so it must exist");
 
-        let preview = Preview::from(
-            zettel
-                .content(&kt.ws)
-                .await
-                .expect("This thing cannot be parsed properly..."),
-        );
+        let preview = Preview::from(zettel.content(&kt.index).clone());
 
         // okay now that we have the zettel we need to construct the zettel out of this id
-        let zettel_view: ZettelView = kt
-            .get_node_by_zettel_id(selected_zettel)
-            .expect("must exist, handle case where it doesnt later...")
-            .payload()
-            .into();
-
-        let ws = kt.ws.clone();
+        let zettel_view: ZettelView = zettel.into();
 
         drop(kt);
 
         Ok(Self {
             signal_tx: None,
+            search: Search::new(kh.clone()),
             kh,
             layouts: Layouts::default(),
             zettel_list,
             zettel_view,
             preview,
-            search: Search::new(ws),
         })
     }
 
@@ -146,25 +130,20 @@ impl Zk<'_> {
 
         // sometimes the selection we get is over the length of the thing, so its
         // actually fine if this is none, just means we reached the end of the list
-        let Some(z_id) = self.zettel_list.id_list.get(selection_idx) else {
+        let Some(zid) = self.zettel_list.id_list.get(selection_idx) else {
             return Ok(());
         };
 
         let kh = self.kh.read().await;
 
-        self.zettel_view = kh
-            .get_node_by_zettel_id(z_id)
-            .expect("this should be valid unless the kasten changed out underneath us")
-            .payload()
-            .into();
-
-        self.preview = kh
-            .get_node_by_zettel_id(z_id)
-            .expect("this should be valid unless the kasten changed out underneath us")
-            .payload()
-            .content(&kh.ws)
+        let zettel = &Zettel::fetch_from_db(zid, &kh.db)
             .await?
-            .into();
+            .context("Unknown Behaviour, A selected zettel got deleted somehow.")?;
+
+        self.zettel_view = zettel.into();
+
+        self.preview = zettel.content(&kh.index).clone().into();
+
         drop(kh);
 
         Ok(())
@@ -175,7 +154,7 @@ impl Zk<'_> {
         let models = ZettelEntity::load()
             .with(TagEntity)
             .order_by_desc(ZettelColumns::ModifiedAt)
-            .all(&kt.ws.db)
+            .all(&kt.db)
             .await?;
 
         // im being a good boy and dropping this as soon as im done with the db
@@ -250,14 +229,8 @@ impl Component for Zk<'_> {
                 };
 
                 let kh = self.kh.read().await;
-                let path = kh
-                    .get_node_by_zettel_id(zid)
-                    .expect(
-                        "This should not have
-                    change dout underneath us",
-                    )
-                    .payload()
-                    .absolute_path(&kh.ws);
+
+                let path = kh.index.get_zod(zid).path.clone();
 
                 drop(kh);
 
@@ -267,12 +240,13 @@ impl Component for Zk<'_> {
             Signal::NewZettel => {
                 // what the fuck am i going to do in here
 
-                let ws = &self.kh.read().await.ws;
+                let mut kt = self.kh.write().await;
 
                 // we create the zettel with the query as the
-                let z = Zettel::new(self.search.query(), ws).await?;
+                let z = Zettel::new(self.search.query(), &mut kt).await?;
+                let path = z.absolute_path(&kt.index).to_path_buf();
 
-                let path = z.absolute_path(ws);
+                drop(kt);
 
                 return Ok(Some(Signal::Helix { path }));
             }
@@ -284,15 +258,15 @@ impl Component for Zk<'_> {
                     .selected()
                     .expect("This must be the zettel we just edited");
 
-                let Some(id) = self.zettel_list.id_list.get(selected) else {
+                let Some(zid) = self.zettel_list.id_list.get(selected) else {
                     return Ok(None);
                 };
 
                 let kt = self.kh.read().await;
 
-                let node = kt
-                    .get_node_by_zettel_id(id)
-                    .expect("Invariant broken, this must exist.");
+                let zettel = Zettel::fetch_from_db(zid, &kt.db)
+                    .await?
+                    .expect("invariant broken, we just closed this zettel");
 
                 // reset the state of the component
                 self.search.clear_query();
@@ -305,8 +279,8 @@ impl Component for Zk<'_> {
                     self.zettel_list.width,
                 );
 
-                self.zettel_view = ZettelView::from(node.payload());
-                self.preview = Preview::from(node.payload().content(&kt.ws).await?);
+                self.zettel_view = ZettelView::from(&zettel);
+                self.preview = Preview::from(zettel.content(&kt.index).clone());
                 drop(kt);
             }
 

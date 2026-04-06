@@ -9,7 +9,7 @@ use color_eyre::eyre::{Context, Result};
 use crate::{
     cli::{Commands, ZettelSubcommand},
     config::{Config, get_config_dir},
-    types::{Workspace, Zettel},
+    types::{Kasten, Zettel},
 };
 
 impl Commands {
@@ -21,7 +21,7 @@ impl Commands {
                     .context("Failed to get current directory")?
                     .join(&name);
 
-                Workspace::initialize(dir.clone()).await?;
+                Kasten::initialize(dir.clone()).await?;
 
                 // write config that sets the filaments directory to current dir!
                 let config_str = dbg! {Config::generate(&dir)}?;
@@ -44,11 +44,12 @@ impl Commands {
 
             Self::Zettel(zettel_sub_command) => {
                 let conf = Config::parse()?;
-                let ws = Workspace::instansiate(conf.fil_dir).await?;
+                // let ws = Workspace::instansiate(conf.fil_dir).await?;
+                let mut kt = Kasten::instansiate(conf.fil_dir).await?;
 
                 match zettel_sub_command {
                     ZettelSubcommand::New { title } => {
-                        let zettel = Zettel::new(title, &ws).await?;
+                        let zettel = Zettel::new(title, &mut kt).await?;
                         println!("Zettel Created! {zettel:#?}");
                     }
                     ZettelSubcommand::List { by_tag: _by_tag } => {}

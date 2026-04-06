@@ -18,11 +18,15 @@ mod task;
 #[expect(unused_imports)]
 pub use task::Task;
 
-mod workspace;
-pub use workspace::Workspace;
-
 mod link;
 pub use link::Link;
+
+mod filaments;
+#[expect(unused_imports)]
+pub use filaments::Filaments;
+
+mod index;
+pub use index::Index;
 
 mod kasten;
 pub use kasten::Kasten;
