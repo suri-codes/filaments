@@ -4,7 +4,6 @@ use std::{fmt::Display, path::Path};
 use color_eyre::eyre::{Result, eyre};
 use egui_graphs::Node;
 use serde::{Deserialize, Serialize};
-use tokio::fs;
 
 use dto::DateTime;
 
@@ -18,6 +17,8 @@ pub struct FrontMatter {
     pub created_at: DateTime,
     pub tag_strings: Vec<String>,
 }
+
+pub type Body = String;
 
 impl FrontMatter {
     pub fn new(
@@ -51,9 +52,9 @@ impl FrontMatter {
     /// Tags: Daily barber
     /// ---
     /// ```
-    pub async fn extract_from_file(path: impl AsRef<Path>) -> Result<(Self, String)> {
+    pub fn extract_from_file(path: impl AsRef<Path>) -> Result<(Self, Body)> {
         let path = path.as_ref();
-        let string = fs::read_to_string(path).await?;
+        let string = std::fs::read_to_string(path)?;
         Self::extract_from_str(&string)
     }
 
@@ -66,7 +67,7 @@ impl FrontMatter {
     /// Tags: Daily barber
     /// ---
     /// ```
-    pub fn extract_from_str(string: impl Into<String>) -> Result<(Self, String)> {
+    pub fn extract_from_str(string: impl Into<String>) -> Result<(Self, Body)> {
         let string: String = string.into();
         // we just want to strictly match this, else we error
 

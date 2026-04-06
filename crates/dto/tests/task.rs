@@ -13,7 +13,6 @@ async fn test_group_task_insert() {
 
     let group_zettel: ZettelModel = ZettelActiveModel {
         title: Set("Something".to_owned()),
-        file_path: Set("/voo/doo".to_owned()),
         ..Default::default()
     }
     .insert(&db)
@@ -33,7 +32,6 @@ async fn test_group_task_insert() {
     let task_zettel: ZettelModel = ZettelActiveModel {
         // nano_id: Set(NanoId::default()),
         title: Set("nomething".to_owned()),
-        file_path: Set("/voo/doo".to_owned()),
         ..Default::default()
     }
     .insert(&db)

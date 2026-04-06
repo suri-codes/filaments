@@ -7,6 +7,7 @@ use std::{
 
 use color_eyre::eyre::Result;
 use directories::ProjectDirs;
+use ron::ser::PrettyConfig;
 
 use crate::config::{file::RonConfig, keymap::KeyMap};
 
@@ -31,7 +32,7 @@ pub static CONFIG_DIRECTORY: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
         .map(PathBuf::from)
 });
 
-const DEFAULT_CONFIG: &str = include_str!("../../.config/config.ron");
+const DEFAULT_CONFIG: &str = include_str!("../../.config/default_config.ron");
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -47,7 +48,10 @@ impl Config {
 
         default_conf.directory = fil_dir.canonicalize()?;
 
-        Ok(ron::to_string(&default_conf)?)
+        Ok(ron::ser::to_string_pretty(
+            &default_conf,
+            PrettyConfig::default(),
+        )?)
     }
     /// Parse the config from `~/.config/filaments`, but will prioritize
     /// `FIL_CONFIG_DIR`.

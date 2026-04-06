@@ -10,18 +10,18 @@ use ratatui::{
 };
 use ratatui_textarea::TextArea;
 
-use crate::types::{Workspace, Zettel};
+use crate::types::{KastenHandle, Zettel};
 
 #[derive(Clone)]
 pub struct Search<'text> {
     pub query: TextArea<'text>,
     layouts: Layouts,
     matcher: Matcher,
-    ws: Workspace,
+    kh: KastenHandle,
 }
 
 impl Search<'_> {
-    pub fn new(ws: Workspace) -> Self {
+    pub fn new(kh: KastenHandle) -> Self {
         let mut tag = TextArea::default();
         tag.set_style(Style::default());
         tag.set_block(
@@ -34,7 +34,7 @@ impl Search<'_> {
         Self {
             matcher: Matcher::default(),
             query: Self::new_query(),
-            ws,
+            kh,
             layouts: Layouts::default(),
         }
     }
@@ -76,10 +76,11 @@ impl Search<'_> {
         let read_tasks = zettels
             .into_iter()
             .map(|z| {
-                let ws = self.ws.clone();
+                let kh = self.kh.clone();
                 tokio::spawn(async move {
-                    let content = z.content(&ws).await?;
-                    let front_matter = z.front_matter(&ws).await?;
+                    let index = &kh.read().await.index;
+                    let content = z.content(index);
+                    let front_matter = z.front_matter(index);
                     Ok::<(Zettel, String), Error>((z, format!("{content}\n{front_matter}")))
                 })
             })
