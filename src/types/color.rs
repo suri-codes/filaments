@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use dto::ColorDTO;
 use ratatui::style::Color as RatColor;
 
@@ -5,6 +7,13 @@ use ratatui::style::Color as RatColor;
 /// internally represented as rgb
 #[derive(Debug, Copy, Clone, Default)]
 pub struct Color(ColorDTO);
+
+impl Display for Color {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let rgb = self.0.to_rgb8();
+        write!(f, "#{:02X}{:02X}{:02X}", rgb.r, rgb.g, rgb.b)
+    }
+}
 
 impl From<ColorDTO> for Color {
     fn from(value: ColorDTO) -> Self {

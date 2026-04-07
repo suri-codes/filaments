@@ -5,7 +5,7 @@ use std::{
     sync::LazyLock,
 };
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Context, Result};
 use directories::ProjectDirs;
 use ron::ser::PrettyConfig;
 
@@ -63,13 +63,19 @@ impl Config {
     pub fn parse() -> Result<Self> {
         let ron: RonConfig = {
             let file_path = get_config_dir().join("config.ron");
-            ron::from_str(&read_to_string(file_path)?)?
+            ron::from_str(&read_to_string(&file_path).with_context(|| {
+                format!("Failed to read config from path: {}", file_path.display())
+            })?)?
         };
 
-        let keymap = KeyMap::try_from(&ron)?;
+        let keymap =
+            KeyMap::try_from(&ron).with_context(|| "Unable to parse keymap from config!")?;
 
         Ok(Self {
-            fil_dir: ron.directory.canonicalize()?,
+            fil_dir: ron
+                .directory
+                .canonicalize()
+                .with_context(|| "Failed to canonicalize the directory provided in the config!")?,
             keymap,
         })
     }

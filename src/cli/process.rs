@@ -5,10 +5,12 @@ use std::{
 };
 
 use color_eyre::eyre::{Context, Result};
+use tower_lsp::{LspService, Server};
 
 use crate::{
     cli::{Commands, ZettelSubcommand},
     config::{Config, get_config_dir},
+    lsp::Backend,
     types::{Kasten, Zettel},
 };
 
@@ -53,6 +55,19 @@ impl Commands {
                     }
                     ZettelSubcommand::List { by_tag: _by_tag } => {}
                 }
+            }
+            Self::Lsp => {
+                let conf = Config::parse().with_context(|| "Failed to parse the config!!")?;
+                let kt = Kasten::instansiate(conf.fil_dir)
+                    .await
+                    .with_context(|| "Failed to initialize a kasten!!")?;
+
+                let stdin = tokio::io::stdin();
+                let stdout = tokio::io::stdout();
+
+                let (service, socket) = LspService::new(|client| Backend::new(client, kt));
+
+                Server::new(stdin, stdout, socket).serve(service).await;
             }
         }
 

@@ -29,6 +29,9 @@ pub enum Commands {
     #[command(subcommand)]
     Zettel(ZettelSubcommand),
 
+    /// Spawn the `LSP`
+    Lsp,
+
     // / Manage TARS groups.
     //  #[command(subcommand)]
     //  Group(GroupSubcommand),

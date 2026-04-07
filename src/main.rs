@@ -16,13 +16,13 @@ use tokio::sync::RwLock;
 use tracing::debug;
 
 mod cli;
-mod gui;
-mod tui;
-mod types;
-
 mod config;
 mod errors;
+mod gui;
 mod logging;
+mod lsp;
+mod tui;
+mod types;
 
 fn main() -> color_eyre::Result<()> {
     errors::init()?;
