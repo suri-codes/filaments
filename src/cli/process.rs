@@ -57,10 +57,17 @@ impl Commands {
                 }
             }
             Self::Lsp => {
+                let conf = Config::parse().with_context(|| "Failed to parse the config!!")?;
+                let kt = Kasten::instansiate(conf.fil_dir)
+                    .await
+                    .with_context(|| "Failed to initialize a kasten!!")?;
+
                 let stdin = tokio::io::stdin();
                 let stdout = tokio::io::stdout();
 
-                let (service, socket) = LspService::new(|client| Backend { client });
+                let (service, socket) =
+                    LspService::new(|client| Backend::new(client, kt.db.clone()));
+
                 Server::new(stdin, stdout, socket).serve(service).await;
             }
         }
