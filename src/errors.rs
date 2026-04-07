@@ -1,3 +1,11 @@
+use std::io::stdout;
+
+use crossterm::{
+    cursor,
+    event::{DisableBracketedPaste, DisableMouseCapture},
+    terminal::LeaveAlternateScreen,
+};
+
 /// Sets the panic-hook to be customized color-eyre `panic_hook`.
 ///
 /// Additionally the panic handler prints different information
@@ -15,7 +23,13 @@ pub fn init() -> color_eyre::Result<()> {
 
     eyre_hook.install()?;
     std::panic::set_hook(Box::new(move |panic_info| {
-        //TODO: exit from terminal if the app is in a terminal
+        // exit from terminal if the app is in a terminal
+        if crossterm::terminal::is_raw_mode_enabled().unwrap() {
+            let _ = crossterm::execute!(stdout(), DisableBracketedPaste);
+            let _ = crossterm::execute!(stdout(), DisableMouseCapture);
+            let _ = crossterm::execute!(stdout(), LeaveAlternateScreen, cursor::Show);
+            let _ = crossterm::terminal::disable_raw_mode();
+        }
 
         // in release mode, do human_panic printing
         #[cfg(not(debug_assertions))]
