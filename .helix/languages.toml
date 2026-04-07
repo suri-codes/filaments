@@ -1,0 +1,9 @@
+[language-server.filaments]
+command = "/Users/suri/dev/projects/filaments/target/debug/fil"
+args = ["lsp"]
+
+
+[[language]]
+name = "markdown"
+roots = [".filaments"]
+language-servers = ["filaments", "harper-ls"]

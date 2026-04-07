@@ -78,7 +78,7 @@ impl Default for Layouts {
 
             title_created: Layout::horizontal(vec![Constraint::Fill(80), Constraint::Min(24)]),
 
-            tags_id: Layout::horizontal(vec![Constraint::Fill(95), Constraint::Min(8)]),
+            tags_id: Layout::horizontal(vec![Constraint::Fill(95), Constraint::Min(10)]),
         }
     }
 }
