@@ -10,6 +10,8 @@
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    crane.url = "github:ipetkov/crane"; # add this
   };
 
   # Flake outputs
@@ -39,6 +41,7 @@
             };
           }
         );
+
     in
     {
 
@@ -82,19 +85,30 @@
 
       packages = forEachSupportedSystem (
         { pkgs }:
-        {
-          default = pkgs.rustPlatform.buildRustPackage {
-            pname = "fil";
-            version = "0.1.0";
-            src = ./.;
-            cargoLock.lockFile = ./Cargo.lock;
-            cargoLock.outputHashes = {
-              "egui_graphs-0.30.0" = "sha256-mJuGENPnDeD8SDNBXZZpLwcqrKlLTxuM6yCCx+1dSko=";
-            };
+        let
+          craneLib = inputs.crane.mkLib pkgs;
 
+          src = pkgs.lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type: (pkgs.lib.hasSuffix ".ron" path) || (craneLib.filterCargoSources path type);
+          };
+
+          commonArgs = {
+            inherit src;
+            strictDeps = true;
             nativeBuildInputs = [ pkgs.pkg-config ];
             buildInputs = [ pkgs.openssl ];
           };
+
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        in
+        {
+          default = craneLib.buildPackage (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+            }
+          );
         }
       );
 
