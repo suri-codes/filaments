@@ -49,7 +49,7 @@ impl FrontMatter {
     /// ---
     /// Title: LOL
     /// Date: 2025-01-01 12:50:19 AM
-    /// Tags: Daily barber
+    /// Tags: @Daily @barber
     /// ---
     /// ```
     pub fn extract_from_file(path: impl AsRef<Path>) -> Result<(Self, Body)> {
@@ -64,7 +64,7 @@ impl FrontMatter {
     /// ---
     /// Title: LOL
     /// Date: 2025-01-01 12:50:19 AM
-    /// Tags: Daily barber
+    /// Tags: @Daily @barber
     /// ---
     /// ```
     pub fn extract_from_str(string: impl Into<String>) -> Result<(Self, Body)> {
@@ -108,7 +108,7 @@ impl FrontMatter {
             .strip_prefix("Tags: ")
             .ok_or_else(|| eyre!("Tag line doesn't start with \"Tags: \" ".to_owned(),))?
             .split_whitespace()
-            .map(ToOwned::to_owned)
+            .filter_map(|tag| tag.strip_prefix("@").map(ToOwned::to_owned))
             .collect::<Vec<_>>();
 
         delim_check(4)?;
@@ -127,7 +127,7 @@ impl Display for FrontMatter {
         write!(f, "Tags: ")?;
 
         for tag in &self.tag_strings {
-            write!(f, "{tag} ")?;
+            write!(f, "@{tag} ")?;
         }
 
         writeln!(f, "\n---")
@@ -149,7 +149,7 @@ mod tests {
             r"---            
 Title: LOL
 Date: 2025-01-01 12:50:19 AM
-Tags: whoa barber
+Tags: @whoa @barber
 ---
 ",
             (
