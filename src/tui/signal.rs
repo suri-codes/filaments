@@ -5,7 +5,7 @@ use strum::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::tui::Region;
+use crate::{tui::Region, types::ZettelId};
 
 /// The varying signals that can be emitted.
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
@@ -33,7 +33,10 @@ pub enum Signal {
     /// User asks to open a `Zettel`
     OpenZettel,
     /// The user is done editing a `Zettel`
-    ClosedZettel,
+    ClosedZettel {
+        /// the id of the `Zettel` that was closed
+        zid: ZettelId,
+    },
 
     /// this is fucking temporary
     Helix {

@@ -11,7 +11,7 @@ use tracing::{debug, trace};
 use crate::{
     config::Config,
     tui::{Event, Tui, components::Viewport},
-    types::KastenHandle,
+    types::{KastenHandle, ZettelId},
 };
 
 use super::{components::Component, signal::Signal};
@@ -207,7 +207,9 @@ impl App {
 
                     debug!("successfully processed path: {}", path.display());
 
-                    self.signal_tx.send(Signal::ClosedZettel)?;
+                    let zid: ZettelId = path.try_into()?;
+
+                    self.signal_tx.send(Signal::ClosedZettel { zid })?;
 
                     tui.terminal.clear()?;
                     tui.enter()?;

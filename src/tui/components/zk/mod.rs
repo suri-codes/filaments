@@ -250,13 +250,7 @@ impl Component for Zk<'_> {
                 return Ok(Some(Signal::Helix { path }));
             }
 
-            Signal::ClosedZettel => {
-                let selected = self
-                    .zettel_list
-                    .state
-                    .selected()
-                    .expect("This must be the zettel we just edited");
-
+            Signal::ClosedZettel { zid } => {
                 // regenerate a fresh zettel list
                 self.zettel_list = ZettelList::new(
                     self.get_zettels_by_current_query().await?,
@@ -264,19 +258,21 @@ impl Component for Zk<'_> {
                     self.zettel_list.width,
                 );
 
-                let Some(zid) = self.zettel_list.id_list.get(selected) else {
-                    return Ok(None);
-                };
-
                 let kt = self.kh.read().await;
 
-                let zettel = Zettel::fetch_from_db(zid, &kt.db)
+                let zettel = Zettel::fetch_from_db(&zid, &kt.db)
                     .await?
                     .expect("invariant broken, we just closed this zettel");
 
+                let idx = self
+                    .zettel_list
+                    .id_list
+                    .iter()
+                    .position(|id| *id == zettel.id);
+
                 // reset the state of the component
                 self.search.clear_query();
-                self.zettel_list.state.select_first();
+                self.zettel_list.state.select(idx);
 
                 self.zettel_view = ZettelView::from(&zettel);
                 self.preview = Preview::from(zettel.content(&kt.index).clone());

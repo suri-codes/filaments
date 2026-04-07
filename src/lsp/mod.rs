@@ -54,6 +54,7 @@ impl LanguageServer for Backend {
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        eprintln!("WHATTDAFUCKKK");
         let Some(trigger) = params
             .context
             .as_ref()
