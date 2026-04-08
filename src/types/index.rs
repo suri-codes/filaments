@@ -1,22 +1,25 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
 };
 
 use color_eyre::eyre::Result;
 use dto::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
-    QueryFilter, TagActiveModel, TagEntity, ZettelEntity, ZettelModelEx, ZettelTagActiveModel,
-    ZettelTagColumns, ZettelTagEntity,
+    NanoId, QueryFilter, TagActiveModel, TagEntity, ZettelEntity, ZettelModelEx,
+    ZettelTagActiveModel, ZettelTagColumns, ZettelTagEntity,
 };
+use pulldown_cmark::{Event, Options, Parser};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use tracing::info;
 
-use crate::types::{FrontMatter, ZettelId, frontmatter::Body};
+use crate::types::{FrontMatter, Link, ZettelId, frontmatter::Body};
 
 #[derive(Debug, Clone)]
 pub struct Index {
     pub(super) zods: HashMap<ZettelId, ZettelOnDisk>,
+    pub(super) outgoing_links: HashMap<ZettelId, Vec<Link>>,
+    // pub(super) incoming_links: HashMap<ZettelId, Vec<Link>>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,6 +35,7 @@ impl Index {
         let root = root.canonicalize()?;
 
         let mut zods = HashMap::new();
+        let mut possible_outgoing_links = HashMap::new();
 
         std::fs::read_dir(root)?
             .par_bridge()
@@ -44,28 +48,75 @@ impl Index {
                         .and_then(|ext| ext.to_str())
                         .is_some_and(|ext| ext == "md")
             })
-            .map(|entry| -> Result<(ZettelId, ZettelOnDisk)> {
+            .map(|entry| -> Result<(ZettelId, ZettelOnDisk, Vec<Link>)> {
                 let path = entry.path();
-                let id: ZettelId = path.as_path().try_into()?;
+                let zid: ZettelId = path.as_path().try_into()?;
                 let (fm, body) = FrontMatter::extract_from_file(&path)?;
 
+                let outgoing_links = Self::parse_outgoing_links(&zid, &body);
+
                 Ok((
-                    id,
+                    zid,
                     ZettelOnDisk {
                         fm,
                         body,
                         path: path.canonicalize()?,
                     },
+                    outgoing_links,
                 ))
             })
             .collect::<Result<Vec<_>>>()?
             .into_iter()
             // .par_bridge()
-            .for_each(|(id, zod)| {
-                zods.insert(id, zod);
+            .for_each(|(id, zod, zettel_outgoing_links)| {
+                zods.insert(id.clone(), zod);
+                possible_outgoing_links.insert(id, zettel_outgoing_links);
             });
 
-        Ok(Self { zods })
+        // simple validation step for links
+        let zid_set = zods.keys().cloned().collect::<HashSet<_>>();
+
+        let outgoing_links = possible_outgoing_links
+            .into_iter()
+            .map(|(id, links)| {
+                let valid_links = links
+                    .into_iter()
+                    .filter(|link| zid_set.contains(&link.source) && zid_set.contains(&link.dest))
+                    .collect::<Vec<_>>();
+
+                (id, valid_links)
+            })
+            .collect::<HashMap<_, _>>();
+
+        Ok(Self {
+            zods,
+            outgoing_links,
+        })
+    }
+
+    pub fn parse_outgoing_links(zid: &ZettelId, body: &str) -> Vec<Link> {
+        let parser = Parser::new_ext(body, Options::ENABLE_WIKILINKS);
+
+        // let mut links = vec![];
+        let mut links = vec![];
+
+        for event in parser {
+            if let Event::Start(pulldown_cmark::Tag::Link {
+                link_type: pulldown_cmark::LinkType::WikiLink { has_pothole: _ },
+                dest_url,
+                ..
+            }) = event
+            {
+                let nano_id = dest_url.as_ref();
+
+                // how do we validate that this is a proper link?
+                // we are just going to trust them for now
+
+                links.push(Link::new(zid.clone(), NanoId::from(nano_id)));
+            }
+        }
+
+        links
     }
 
     pub fn update_path_for_zid(&mut self, zid: &ZettelId, new_path: PathBuf) {
@@ -86,7 +137,7 @@ impl Index {
 
     /// Sync's the curren title of the `Zettel` with the
     /// provided `zid` with the `DB`
-    pub async fn sync_title_with_db(
+    pub async fn sync_zettel_title_with_db(
         &mut self,
         zid: &ZettelId,
         db: &DatabaseConnection,

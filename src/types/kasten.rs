@@ -111,7 +111,7 @@ impl Kasten {
         self.index.process_zid(&zid)?;
         // and then we sync tags
         self.index.sync_tags_with_db(&zid, &self.db).await?;
-        self.index.sync_title_with_db(&zid, &self.db).await?;
+        self.index.sync_zettel_title_with_db(&zid, &self.db).await?;
 
         Ok(())
     }
