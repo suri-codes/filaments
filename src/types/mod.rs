@@ -22,7 +22,6 @@ mod link;
 pub use link::Link;
 
 mod filaments;
-#[expect(unused_imports)]
 pub use filaments::Filaments;
 
 mod index;

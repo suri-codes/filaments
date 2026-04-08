@@ -52,6 +52,7 @@ fn main() -> color_eyre::Result<()> {
     let tui_handle = std::thread::spawn({
         // arc stuff
         let tui_rt = rt.clone();
+        let kh = kh.clone();
 
         // closure to run the tui
         move || -> color_eyre::Result<()> {
@@ -69,7 +70,8 @@ fn main() -> color_eyre::Result<()> {
     if args.visualizer {
         // enter the guard so egui_async works properly
         let _rt_guard = rt.enter();
-        FilViz::run()?;
+        let index = rt.block_on(async { kh.read().await.index.clone() });
+        FilViz::run(&index)?;
     }
 
     // join on the tui
