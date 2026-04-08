@@ -1,42 +1,62 @@
 use eframe::egui;
+use egui_graphs::{SettingsInteraction, SettingsNavigation};
+
+use crate::types::{Filaments, Index};
 
 /// The `Filaments Visualizer`, which is an instance of `eframe`, which uses `egui`
-#[derive(Default)]
 pub struct FilViz {
-    /// example for now
-    text: String,
+    filaments: Filaments,
 }
 
 impl FilViz {
     /// Create a new instance of the `FiLViz`
-    const fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(_cc: &eframe::CreationContext<'_>, idx: &Index) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_global_style.
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
         Self {
-            text: String::new(),
+            filaments: Filaments::from(idx),
         }
     }
 
     /// Create and run the `FilViz`.
-    pub fn run() -> color_eyre::Result<()> {
+    pub fn run(idx: &Index) -> color_eyre::Result<()> {
         let native_options = eframe::NativeOptions::default();
         eframe::run_native(
             "Filaments Visualizer",
             native_options,
-            Box::new(|cc| Ok(Box::new(Self::new(cc)))),
+            Box::new(|cc| Ok(Box::new(Self::new(cc, idx)))),
         )?;
 
         Ok(())
     }
 }
 
+type L = egui_graphs::LayoutForceDirected<egui_graphs::FruchtermanReingoldWithCenterGravity>;
+type S = egui_graphs::FruchtermanReingoldWithCenterGravityState;
+
 impl eframe::App for FilViz {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show_inside(ui, |ui| {
-            ui.heading("Hello World!");
-            ui.text_edit_singleline(&mut self.text);
+            let g = &mut self.filaments.graph;
+
+            let mut view = egui_graphs::GraphView::<_, _, _, _, _, _, S, L>::new(g)
+                .with_interactions(
+                    &SettingsInteraction::new()
+                        .with_hover_enabled(false)
+                        .with_dragging_enabled(false)
+                        .with_node_selection_enabled(false)
+                        .with_node_selection_multi_enabled(false)
+                        .with_edge_selection_enabled(false)
+                        .with_edge_selection_multi_enabled(false),
+                )
+                .with_navigations(
+                    &SettingsNavigation::new().with_fit_to_screen_padding(0.5), // .with_zoom_and_pan_enabled(true)
+                                                                                // .with_fit_to_screen_enabled(false),
+                );
+
+            ui.add(&mut view);
 
             // credits!
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {

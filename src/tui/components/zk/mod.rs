@@ -95,9 +95,6 @@ impl Zk<'_> {
 
         let kt = kh.read().await;
 
-        info!("{selected_zettel:#?}");
-        info!("{kt:#?}");
-
         let zettel = zettels
             .iter()
             .find(|&z| &z.id == selected_zettel)
