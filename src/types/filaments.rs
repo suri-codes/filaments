@@ -37,12 +37,13 @@ impl From<&Index> for Filaments {
             let node_idx = graph.add_node_custom(zid.clone(), |node| {
                 node.set_label(zod.fm.title.clone());
                 let disp = node.display_mut();
-                disp.radius = 100.0;
+                disp.radius = 50.0;
 
                 // randomize position
                 let x = rand::random_range(0.0..=100.0);
                 let y = rand::random_range(0.0..=100.0);
                 node.set_location(emath::Pos2 { x, y });
+                node.set_hovered(true);
             });
 
             let _ = zid_to_gid.insert(zid.clone(), node_idx);

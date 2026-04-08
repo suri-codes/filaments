@@ -1,4 +1,5 @@
 use eframe::egui;
+use egui_graphs::{SettingsInteraction, SettingsNavigation};
 
 use crate::types::{Filaments, Index};
 
@@ -40,7 +41,20 @@ impl eframe::App for FilViz {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let g = &mut self.filaments.graph;
 
-            let mut view = egui_graphs::GraphView::<_, _, _, _, _, _, S, L>::new(g);
+            let mut view = egui_graphs::GraphView::<_, _, _, _, _, _, S, L>::new(g)
+                .with_interactions(
+                    &SettingsInteraction::new()
+                        .with_hover_enabled(false)
+                        .with_dragging_enabled(false)
+                        .with_node_selection_enabled(false)
+                        .with_node_selection_multi_enabled(false)
+                        .with_edge_selection_enabled(false)
+                        .with_edge_selection_multi_enabled(false),
+                )
+                .with_navigations(
+                    &SettingsNavigation::new().with_fit_to_screen_padding(0.5), // .with_zoom_and_pan_enabled(true)
+                                                                                // .with_fit_to_screen_enabled(false),
+                );
 
             ui.add(&mut view);
 
