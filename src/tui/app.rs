@@ -29,6 +29,7 @@ pub struct App {
     kh: KastenHandle,
     signal_tx: UnboundedSender<Signal>,
     signal_rx: UnboundedReceiver<Signal>,
+    viz_signal_tx: UnboundedSender<Signal>,
 }
 
 /// The different regions of the application that the user can
@@ -45,7 +46,12 @@ pub enum Region {
 
 impl App {
     /// Construct a new `App` instance.
-    pub async fn new(tick_rate: f64, frame_rate: f64, kh: KastenHandle) -> Result<Self> {
+    pub async fn new(
+        tick_rate: f64,
+        frame_rate: f64,
+        kh: KastenHandle,
+        viz_signal_tx: UnboundedSender<Signal>,
+    ) -> Result<Self> {
         let (signal_tx, signal_rx) = mpsc::unbounded_channel();
 
         Ok(Self {
@@ -61,6 +67,7 @@ impl App {
             kh,
             signal_tx,
             signal_rx,
+            viz_signal_tx,
         })
     }
 
@@ -162,6 +169,8 @@ impl App {
         while let Ok(signal) = self.signal_rx.try_recv() {
             if signal != Signal::Tick && signal != Signal::Render {
                 debug!("handling signal: {signal:?}");
+                // we dont care if the receiver is dropped, its fine
+                let _ = self.viz_signal_tx.send(signal.clone());
             }
 
             match signal.clone() {
@@ -176,14 +185,14 @@ impl App {
 
                     let hx = spawn({
                         let file_path = path.clone();
-                        let fil_dir = self.config.fil_dir.clone();
+                        let _fil_dir = self.config.fil_dir.clone();
                         move || -> Result<()> {
                             Command::new("hx")
                                 .stdin(std::process::Stdio::inherit())
                                 .stdout(std::process::Stdio::inherit())
                                 .stderr(std::process::Stdio::inherit())
                                 .arg(file_path)
-                                .arg(format!("-w {}", fil_dir.display()))
+                                // .arg(format!("-w {}", fil_dir.display()))
                                 .status()?;
 
                             Ok(())

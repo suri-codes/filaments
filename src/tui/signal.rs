@@ -5,7 +5,10 @@ use strum::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{tui::Region, types::ZettelId};
+use crate::{
+    tui::Region,
+    types::{Link, ZettelId},
+};
 
 /// The varying signals that can be emitted.
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
@@ -28,8 +31,20 @@ pub enum Signal {
     MoveDown,
     MoveUp,
 
-    /// New `Zettel`
+    /// Create a  New `Zettel`
     NewZettel,
+
+    /// This zettel was created (filaments specific)
+    CreatedZettel {
+        zid: ZettelId,
+    },
+
+    /// Set the links for this `ZettelId` (filaments specific)
+    SetLinks {
+        zid: ZettelId,
+        links: Vec<Link>,
+    },
+
     /// User asks to open a `Zettel`
     OpenZettel,
     /// The user is done editing a `Zettel`

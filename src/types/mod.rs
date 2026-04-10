@@ -33,3 +33,6 @@ pub use kasten::KastenHandle;
 
 mod frontmatter;
 pub use frontmatter::FrontMatter;
+
+mod deimos;
+pub use deimos::Deimos;
