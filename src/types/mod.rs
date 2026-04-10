@@ -23,6 +23,7 @@ pub use link::Link;
 
 mod filaments;
 pub use filaments::Filaments;
+pub use filaments::FilamentsHandle;
 
 mod index;
 pub use index::Index;
@@ -33,3 +34,6 @@ pub use kasten::KastenHandle;
 
 mod frontmatter;
 pub use frontmatter::FrontMatter;
+
+mod deimos;
+pub use deimos::Deimos;

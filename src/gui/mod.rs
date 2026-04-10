@@ -1,32 +1,30 @@
 use eframe::egui;
 use egui_graphs::{SettingsInteraction, SettingsNavigation};
 
-use crate::types::{Filaments, Index};
+use crate::types::FilamentsHandle;
 
 /// The `Filaments Visualizer`, which is an instance of `eframe`, which uses `egui`
 pub struct FilViz {
-    filaments: Filaments,
+    fh: FilamentsHandle,
 }
 
 impl FilViz {
     /// Create a new instance of the `FiLViz`
-    fn new(_cc: &eframe::CreationContext<'_>, idx: &Index) -> Self {
+    const fn new(_cc: &eframe::CreationContext<'_>, fh: FilamentsHandle) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_global_style.
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
-        Self {
-            filaments: Filaments::from(idx),
-        }
+        Self { fh }
     }
 
     /// Create and run the `FilViz`.
-    pub fn run(idx: &Index) -> color_eyre::Result<()> {
+    pub fn run(fh: FilamentsHandle) -> color_eyre::Result<()> {
         let native_options = eframe::NativeOptions::default();
         eframe::run_native(
             "Filaments Visualizer",
             native_options,
-            Box::new(|cc| Ok(Box::new(Self::new(cc, idx)))),
+            Box::new(|cc| Ok(Box::new(Self::new(cc, fh)))),
         )?;
 
         Ok(())
@@ -39,7 +37,7 @@ type S = egui_graphs::FruchtermanReingoldWithCenterGravityState;
 impl eframe::App for FilViz {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show_inside(ui, |ui| {
-            let g = &mut self.filaments.graph;
+            let g = &mut self.fh.lock().expect("Lock must not be poisoned").graph;
 
             let mut view = egui_graphs::GraphView::<_, _, _, _, _, _, S, L>::new(g)
                 .with_interactions(
@@ -52,7 +50,7 @@ impl eframe::App for FilViz {
                         .with_edge_selection_multi_enabled(false),
                 )
                 .with_navigations(
-                    &SettingsNavigation::new().with_fit_to_screen_padding(0.5), // .with_zoom_and_pan_enabled(true)
+                    &SettingsNavigation::new().with_fit_to_screen_padding(0.2), // .with_zoom_and_pan_enabled(true)
                                                                                 // .with_fit_to_screen_enabled(false),
                 );
 

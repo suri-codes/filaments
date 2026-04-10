@@ -9,7 +9,7 @@ use crate::{
     config::Config,
     gui::FilViz,
     tui::TuiApp,
-    types::{Kasten, KastenHandle},
+    types::{Deimos, Filaments, Kasten, KastenHandle},
 };
 use clap::Parser;
 use tokio::sync::RwLock;
@@ -66,12 +66,26 @@ fn main() -> color_eyre::Result<()> {
         }
     });
 
+    let fh = rt.block_on(async {
+        Arc::new(std::sync::Mutex::new(Filaments::from(
+            &kh.read().await.index,
+        )))
+    });
+    // spawn deimos
+    {
+        let fh = fh.clone();
+
+        rt.spawn(async {
+            let deimos = Deimos::new(kh, fh);
+            deimos.watch().await
+        });
+    }
+
     // if they asked for the visualizer, we give them the visualizer
     if args.visualizer {
         // enter the guard so egui_async works properly
         let _rt_guard = rt.enter();
-        let index = rt.block_on(async { kh.read().await.index.clone() });
-        FilViz::run(&index)?;
+        FilViz::run(fh)?;
     }
 
     // join on the tui

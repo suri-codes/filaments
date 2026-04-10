@@ -1,5 +1,5 @@
 #![expect(dead_code)]
-use std::{cmp::max, collections::HashMap};
+use std::{cmp::max, collections::HashMap, sync::Arc};
 
 use eframe::emath;
 use egui_graphs::{
@@ -16,11 +16,14 @@ const GRAPH_MIN_NODES: usize = 128;
 /// Arbitrarily chosen minimum number of edges
 const GRAPH_MIN_EDGES: usize = GRAPH_MIN_NODES * 3;
 
+#[derive(Debug)]
 pub struct Filaments {
     pub graph: ZkGraph,
     /// simple conversions
     zid_to_gid: HashMap<ZettelId, NodeIndex>,
 }
+
+pub type FilamentsHandle = Arc<std::sync::Mutex<Filaments>>;
 
 impl From<&Index> for Filaments {
     fn from(value: &Index) -> Self {
