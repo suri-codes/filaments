@@ -175,13 +175,15 @@ impl App {
                     tui.exit()?;
 
                     let hx = spawn({
-                        let path = path.clone();
+                        let file_path = path.clone();
+                        let fil_dir = self.config.fil_dir.clone();
                         move || -> Result<()> {
                             Command::new("hx")
                                 .stdin(std::process::Stdio::inherit())
                                 .stdout(std::process::Stdio::inherit())
                                 .stderr(std::process::Stdio::inherit())
-                                .arg(path)
+                                .arg(file_path)
+                                .arg(format!("-w {}", fil_dir.display()))
                                 .status()?;
 
                             Ok(())
