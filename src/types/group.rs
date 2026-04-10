@@ -1,6 +1,6 @@
 use dto::{DateTime, GroupModelEx, NanoId};
 
-use crate::types::{Color, Priority, Zettel};
+use crate::types::{Priority, Tag, Zettel};
 
 /// A `Group` which contains tasks!
 #[expect(dead_code)]
@@ -11,7 +11,6 @@ pub struct Group {
 
     pub id: NanoId,
     pub name: String,
-    pub color: Color,
     pub priority: Priority,
     pub created_at: DateTime,
     pub modified_at: DateTime,
@@ -19,6 +18,9 @@ pub struct Group {
     /// Can store notes regarding this group in
     /// the `Zettel`
     pub zettel: Zettel,
+
+    /// The `Tag` that is related to this `Group`
+    pub tag: Tag,
 }
 
 impl From<GroupModelEx> for Group {
@@ -27,7 +29,6 @@ impl From<GroupModelEx> for Group {
             _private: (),
             id: value.nano_id,
             name: value.name,
-            color: value.color.into(),
             priority: value.priority.into(),
             created_at: value.created_at,
             modified_at: value.modified_at,
@@ -38,6 +39,13 @@ impl From<GroupModelEx> for Group {
                     "When fetching a Group from the database, we expect to always have the Zettel loaded!!",
                 )
                 .into(),
+            tag: value
+            .tag
+            .into_option()
+            .expect(
+                "When fetching a Group from the database, we expect to always have the Zettel loaded!!",
+            )
+            .into(),
         }
     }
 }

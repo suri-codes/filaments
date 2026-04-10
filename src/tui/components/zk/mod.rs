@@ -72,7 +72,7 @@ impl Zk<'_> {
         let mut zettels: Vec<Zettel> = fetch_all().await?;
 
         if zettels.is_empty() {
-            let _ = Zettel::new("Welcome!", &mut *kh.write().await).await?;
+            let _ = Zettel::new("Welcome!", &mut *kh.write().await, vec![]).await?;
             zettels = fetch_all().await?;
         }
 
@@ -236,7 +236,7 @@ impl Component for Zk<'_> {
                 let mut kt = self.kh.write().await;
 
                 // we create the zettel with the query as the
-                let z = Zettel::new(self.search.query(), &mut kt)
+                let z = Zettel::new(self.search.query(), &mut kt, vec![])
                     .await
                     .with_context(|| "Failed to create a new Zettel!")?;
 

@@ -1,10 +1,10 @@
 //! Testing task functionality with the database abstraction.
 
 use dto::{
-    ActiveModelTrait as _, ActiveValue::Set, GroupActiveModel, GroupEntity, GroupModel,
-    TaskActiveModel, TaskEntity, TaskModel, ZettelActiveModel, ZettelEntity, ZettelModel,
+    ActiveModelTrait as _, ActiveValue::Set, GroupActiveModel, GroupEntity, GroupModelEx,
+    TagActiveModel, TaskActiveModel, TaskEntity, TaskModel, ZettelActiveModel, ZettelEntity,
+    ZettelModel,
 };
-use migration::types::Color;
 mod common;
 
 #[tokio::test]
@@ -19,15 +19,13 @@ async fn test_group_task_insert() {
     .await
     .unwrap();
 
-    let group: GroupModel = GroupActiveModel {
-        name: Set("something".to_owned()),
-        color: Set(Color::new(255, 0, 0)),
-        zettel_id: Set(group_zettel.nano_id.clone()),
-        ..Default::default()
-    }
-    .insert(&db)
-    .await
-    .unwrap();
+    let group: GroupModelEx = GroupActiveModel::builder()
+        .set_name("Something")
+        .set_tag(TagActiveModel::builder().set_name("something"))
+        .set_zettel_id(group_zettel.nano_id)
+        .insert(&db)
+        .await
+        .unwrap();
 
     let task_zettel: ZettelModel = ZettelActiveModel {
         // nano_id: Set(NanoId::default()),
