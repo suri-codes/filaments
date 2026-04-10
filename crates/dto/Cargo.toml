@@ -11,7 +11,7 @@ keywords.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-sea-orm = {version = "2.0.0-rc", features = ["sqlx-sqlite", "runtime-tokio", "macros", "with-chrono"]}
+sea-orm = {version = "2.0.0-rc.38", features = ["sqlx-sqlite", "runtime-tokio", "macros", "with-chrono"]}
 tracing = {workspace = true}
 thiserror = "2.0.18"
 migration = {path="migration"}
