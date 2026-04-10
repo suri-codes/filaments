@@ -1,12 +1,15 @@
+use std::fs;
+
 use color_eyre::eyre::eyre;
-use dto::{TagEntity, ZettelEntity};
+use dto::{NanoId, TagEntity, ZettelEntity};
 use tower_lsp::{
     Client, LanguageServer,
     jsonrpc::{self, Result},
     lsp_types::{
-        CompletionItem, CompletionOptions, CompletionParams, CompletionResponse, InitializeParams,
-        InitializeResult, InitializedParams, MessageType, ServerCapabilities,
-        TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+        CompletionItem, CompletionOptions, CompletionParams, CompletionResponse,
+        GotoDefinitionParams, GotoDefinitionResponse, InitializeParams, InitializeResult,
+        InitializedParams, Location, MessageType, OneOf, Range, ServerCapabilities,
+        TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Url,
     },
 };
 
@@ -41,6 +44,8 @@ impl LanguageServer for Backend {
                     trigger_characters: Some(vec!["[[".to_string(), "@".to_string()]),
                     ..Default::default()
                 }),
+                definition_provider: Some(OneOf::Left(true)),
+
                 ..ServerCapabilities::default()
             },
             ..Default::default()
@@ -54,7 +59,6 @@ impl LanguageServer for Backend {
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
-        eprintln!("WHATTDAFUCKKK");
         let Some(trigger) = params
             .context
             .as_ref()
@@ -127,4 +131,74 @@ impl LanguageServer for Backend {
     async fn shutdown(&self) -> Result<()> {
         Ok(())
     }
+
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let Ok(file_contents) = params
+            .text_document_position_params
+            .text_document
+            .uri
+            .to_file_path()
+            .and_then(|path| fs::read_to_string(path).map_err(|_| ()))
+        else {
+            return Ok(None);
+        };
+
+        let line_idx = params.text_document_position_params.position.line;
+        let char_idx = params.text_document_position_params.position.character;
+
+        let Some(line) = file_contents.lines().nth(line_idx as usize) else {
+            return Ok(None);
+        };
+
+        let id = extract_wikilink_id_at(line, char_idx as usize);
+
+        match id {
+            Some(id) => {
+                let zod = self.kt.index.get_zod(&ZettelId::from(NanoId::from(id)));
+
+                let uri = Url::parse(&format!("file:///{}", zod.path.display()))
+                    .map_err(|e| tower_lsp::jsonrpc::Error::invalid_params(e.to_string()))?;
+
+                Ok(Some(GotoDefinitionResponse::Scalar(Location {
+                    uri,
+                    range: Range::default(),
+                })))
+            }
+            None => Ok(None),
+        }
+    }
+}
+
+/// Returns the `<id>` portion of a `[[<id> | <title>]]` wikilink if the
+/// cursor (0-based char index) falls anywhere inside the `[[ ... ]]` span.
+/// Also handles `[[<id>]]` (no pipe / title).
+///
+// helper function written by claude. I was lowkey too lazy to write this logic xd
+fn extract_wikilink_id_at(line: &str, char_idx: usize) -> Option<&str> {
+    let mut search_start = 0;
+
+    while let Some(open) = line[search_start..].find("[[") {
+        let open = open + search_start;
+        let rest = &line[open + 2..];
+
+        let Some(close) = rest.find("]]") else {
+            break; // unclosed bracket — stop
+        };
+        let close_abs = open + 2 + close; // index of first `]`
+
+        // Is the cursor inside [[ ... ]] ?
+        if char_idx >= open && char_idx < close_abs + 2 {
+            let inner = &line[open + 2..close_abs]; // text between [[ and ]]
+            // id is everything before the first `|`, trimmed
+            let id = inner.split('|').next().unwrap_or(inner).trim();
+            return Some(id);
+        }
+
+        search_start = close_abs + 2; // advance past this `]]`
+    }
+
+    None
 }
