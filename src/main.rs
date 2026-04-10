@@ -7,9 +7,9 @@ use std::{process, sync::Arc};
 use crate::{
     cli::Cli,
     config::Config,
-    gui::FilViz,
     tui::TuiApp,
-    types::{Kasten, KastenHandle},
+    types::{Deimos, Kasten, KastenHandle},
+    viz::FilViz,
 };
 use clap::Parser;
 use tokio::sync::{RwLock, mpsc};
@@ -18,11 +18,11 @@ use tracing::debug;
 mod cli;
 mod config;
 mod errors;
-mod gui;
 mod logging;
 mod lsp;
 mod tui;
 mod types;
+mod viz;
 
 fn main() -> color_eyre::Result<()> {
     errors::init()?;
@@ -55,6 +55,7 @@ fn main() -> color_eyre::Result<()> {
         // arc stuff
         let tui_rt = rt.clone();
         let kh = kh.clone();
+        let signal_tx = signal_tx.clone();
 
         // closure to run the tui
         move || -> color_eyre::Result<()> {
@@ -68,19 +69,19 @@ fn main() -> color_eyre::Result<()> {
         }
     });
 
-    // spawn deimos
-    // {
-
-    //     rt.spawn(async {
-    //         let deimos = Deimos::new(kh, fh);
-    //         deimos.watch().await
-    //     });
-    // }
-
     // if they asked for the visualizer, we give them the visualizer
     if args.visualizer {
         // enter the guard so egui_async works properly
         let _rt_guard = rt.enter();
+
+        // spawn deimos
+        {
+            let kh = kh.clone();
+            rt.spawn(async {
+                let deimos = Deimos::new(kh, signal_tx);
+                deimos.watch().await
+            });
+        }
 
         let index = rt.block_on(async { kh.read().await.index.clone() });
 

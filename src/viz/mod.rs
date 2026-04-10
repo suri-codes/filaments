@@ -73,7 +73,8 @@ impl eframe::App for FilViz {
                 )
                 .with_navigations(
                     &SettingsNavigation::new().with_fit_to_screen_padding(0.2), // .with_zoom_and_pan_enabled(true)
-                                                                                // .with_fit_to_screen_enabled(false),
+                                                                                // .with_fit_to_screen_enabled(false)
+                                                                                // ,
                 );
 
             ui.add(&mut view);
@@ -97,6 +98,10 @@ impl eframe::App for FilViz {
                         let index = &self.kh.read().await.index;
                         self.filaments.insert_zettel(zid, index);
                     });
+                }
+
+                Signal::SetLinks { zid, links } => {
+                    self.filaments.set_links_for_zid(&zid, links);
                 }
 
                 _ => {}

@@ -53,7 +53,7 @@ impl Index {
                 let zid: ZettelId = path.as_path().try_into()?;
                 let (fm, body) = FrontMatter::extract_from_file(&path)?;
 
-                let outgoing_links = Self::parse_outgoing_links(&zid, &body);
+                let outgoing_links = Self::_parse_outgoing_links(&zid, &body);
 
                 Ok((
                     zid,
@@ -94,7 +94,13 @@ impl Index {
         })
     }
 
-    pub fn parse_outgoing_links(zid: &ZettelId, body: &str) -> Vec<Link> {
+    pub fn parse_outgoing_links(&mut self, zid: &ZettelId) {
+        let body = self.get_zod(zid).body.as_str();
+        let links = Self::_parse_outgoing_links(zid, body);
+        self.outgoing_links.insert(zid.clone(), links);
+    }
+
+    fn _parse_outgoing_links(zid: &ZettelId, body: &str) -> Vec<Link> {
         let parser = Parser::new_ext(body, Options::ENABLE_WIKILINKS);
 
         // let mut links = vec![];
@@ -230,6 +236,12 @@ impl Index {
 
     fn get_zod_mut(&mut self, zid: &ZettelId) -> &mut ZettelOnDisk {
         self.zods.get_mut(zid).expect("Invariant broken. Any zid we lookup must exist in the index, otherwise the db is corrupt or not sync'd.")
+    }
+
+    pub fn get_links(&self, zid: &ZettelId) -> &Vec<Link> {
+        self.outgoing_links
+            .get(zid)
+            .expect("Invariant broken. Any zid we look up exist inside this map")
     }
 
     pub const fn zods(&self) -> &HashMap<ZettelId, ZettelOnDisk> {

@@ -35,5 +35,4 @@ mod frontmatter;
 pub use frontmatter::FrontMatter;
 
 mod deimos;
-#[expect(unused_imports)]
 pub use deimos::Deimos;
