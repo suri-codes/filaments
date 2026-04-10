@@ -28,8 +28,13 @@ pub enum Signal {
     MoveDown,
     MoveUp,
 
-    /// New `Zettel`
+    /// Create a  New `Zettel`
     NewZettel,
+
+    CreatedZettel {
+        zid: ZettelId,
+    },
+
     /// User asks to open a `Zettel`
     OpenZettel,
     /// The user is done editing a `Zettel`

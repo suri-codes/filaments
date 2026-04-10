@@ -1,13 +1,12 @@
-#![expect(dead_code)]
-use std::{cmp::max, collections::HashMap, sync::Arc};
+use std::{cmp::max, collections::HashMap};
 
 use eframe::emath;
 use egui_graphs::{
-    Graph,
+    Graph, Node,
     petgraph::{Directed, graph::NodeIndex, prelude::StableGraph},
 };
 
-use crate::types::{Index, Link, ZettelId};
+use crate::types::{Index, Link, ZettelId, index::ZettelOnDisk};
 
 pub type ZkGraph = Graph<ZettelId, Link, Directed>;
 
@@ -23,7 +22,29 @@ pub struct Filaments {
     zid_to_gid: HashMap<ZettelId, NodeIndex>,
 }
 
-pub type FilamentsHandle = Arc<std::sync::Mutex<Filaments>>;
+impl Filaments {
+    pub fn insert_zettel(&mut self, zid: ZettelId, index: &Index) {
+        let zod = index.get_zod(&zid);
+
+        let node_idx = self
+            .graph
+            .add_node_custom(zid.clone(), |node| Self::custom_node_closure(zod, node));
+
+        let _ = self.zid_to_gid.insert(zid, node_idx);
+    }
+
+    fn custom_node_closure(zod: &ZettelOnDisk, node: &mut Node<ZettelId, Link>) {
+        node.set_label(zod.fm.title.clone());
+        let disp = node.display_mut();
+        disp.radius = 50.0;
+
+        // randomize position
+        let x = rand::random_range(0.0..=100.0);
+        let y = rand::random_range(0.0..=100.0);
+        node.set_location(emath::Pos2 { x, y });
+        node.set_hovered(true);
+    }
+}
 
 impl From<&Index> for Filaments {
     fn from(value: &Index) -> Self {
@@ -37,17 +58,8 @@ impl From<&Index> for Filaments {
         ));
 
         for (zid, zod) in value.zods() {
-            let node_idx = graph.add_node_custom(zid.clone(), |node| {
-                node.set_label(zod.fm.title.clone());
-                let disp = node.display_mut();
-                disp.radius = 50.0;
-
-                // randomize position
-                let x = rand::random_range(0.0..=100.0);
-                let y = rand::random_range(0.0..=100.0);
-                node.set_location(emath::Pos2 { x, y });
-                node.set_hovered(true);
-            });
+            let node_idx =
+                graph.add_node_custom(zid.clone(), |node| Self::custom_node_closure(zod, node));
 
             let _ = zid_to_gid.insert(zid.clone(), node_idx);
         }

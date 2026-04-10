@@ -23,7 +23,6 @@ pub use link::Link;
 
 mod filaments;
 pub use filaments::Filaments;
-pub use filaments::FilamentsHandle;
 
 mod index;
 pub use index::Index;
@@ -36,4 +35,5 @@ mod frontmatter;
 pub use frontmatter::FrontMatter;
 
 mod deimos;
+#[expect(unused_imports)]
 pub use deimos::Deimos;

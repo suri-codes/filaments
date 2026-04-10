@@ -240,7 +240,22 @@ impl Component for Zk<'_> {
                     .await
                     .with_context(|| "Failed to create a new Zettel!")?;
 
-                let path = z.absolute_path(&kt.index).to_path_buf();
+                // let path = z.absolute_path(&kt.index).to_path_buf();
+
+                drop(kt);
+
+                return Ok(Some(Signal::CreatedZettel { zid: z.id }));
+
+                // return Ok(Some(Signal::Helix { path }));
+            }
+            Signal::CreatedZettel { zid } => {
+                // what the fuck am i going to do in here
+
+                let kt = self.kh.read().await;
+
+                let path = kt.index.get_zod(&zid).path.clone();
+
+                // let path = z.absolute_path(&kt.index).to_path_buf();
 
                 drop(kt);
 

@@ -1,30 +1,51 @@
 use eframe::egui;
 use egui_graphs::{SettingsInteraction, SettingsNavigation};
+use futures::executor::block_on;
+use tokio::sync::mpsc::UnboundedReceiver;
+use tracing::debug;
 
-use crate::types::FilamentsHandle;
+use crate::{
+    tui::Signal,
+    types::{Filaments, Index, KastenHandle},
+};
 
 /// The `Filaments Visualizer`, which is an instance of `eframe`, which uses `egui`
 pub struct FilViz {
-    fh: FilamentsHandle,
+    kh: KastenHandle,
+    signal_rx: UnboundedReceiver<Signal>,
+    filaments: Filaments,
 }
 
 impl FilViz {
     /// Create a new instance of the `FiLViz`
-    const fn new(_cc: &eframe::CreationContext<'_>, fh: FilamentsHandle) -> Self {
+    fn new(
+        _cc: &eframe::CreationContext<'_>,
+        kh: KastenHandle,
+        signal_rx: UnboundedReceiver<Signal>,
+        index: &Index,
+    ) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_global_style.
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
-        Self { fh }
+        Self {
+            kh,
+            signal_rx,
+            filaments: index.into(),
+        }
     }
 
     /// Create and run the `FilViz`.
-    pub fn run(fh: FilamentsHandle) -> color_eyre::Result<()> {
+    pub fn run(
+        kh: KastenHandle,
+        signal_rx: UnboundedReceiver<Signal>,
+        index: &Index,
+    ) -> color_eyre::Result<()> {
         let native_options = eframe::NativeOptions::default();
         eframe::run_native(
             "Filaments Visualizer",
             native_options,
-            Box::new(|cc| Ok(Box::new(Self::new(cc, fh)))),
+            Box::new(|cc| Ok(Box::new(Self::new(cc, kh, signal_rx, index)))),
         )?;
 
         Ok(())
@@ -37,7 +58,8 @@ type S = egui_graphs::FruchtermanReingoldWithCenterGravityState;
 impl eframe::App for FilViz {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show_inside(ui, |ui| {
-            let g = &mut self.fh.lock().expect("Lock must not be poisoned").graph;
+            // let g = &mut self.fh.lock().expect("Lock must not be poisoned").graph;
+            let g = &mut self.filaments.graph;
 
             let mut view = egui_graphs::GraphView::<_, _, _, _, _, _, S, L>::new(g)
                 .with_interactions(
@@ -62,6 +84,24 @@ impl eframe::App for FilViz {
                 egui::warn_if_debug_build(ui);
             });
         });
+    }
+
+    fn logic(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if let Ok(signal) = self.signal_rx.try_recv() {
+            debug!("received signal in filaments: {signal}");
+
+            #[allow(clippy::single_match)]
+            match signal {
+                Signal::CreatedZettel { zid } => {
+                    block_on(async {
+                        let index = &self.kh.read().await.index;
+                        self.filaments.insert_zettel(zid, index);
+                    });
+                }
+
+                _ => {}
+            }
+        }
     }
 }
 

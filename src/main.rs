@@ -9,10 +9,10 @@ use crate::{
     config::Config,
     gui::FilViz,
     tui::TuiApp,
-    types::{Deimos, Filaments, Kasten, KastenHandle},
+    types::{Kasten, KastenHandle},
 };
 use clap::Parser;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, mpsc};
 use tracing::debug;
 
 mod cli;
@@ -48,6 +48,8 @@ fn main() -> color_eyre::Result<()> {
 
     debug!("Kasten Handle: {kh:#?}");
 
+    let (signal_tx, signal_rx) = mpsc::unbounded_channel();
+
     // then we spawn the tui on its own thread
     let tui_handle = std::thread::spawn({
         // arc stuff
@@ -58,7 +60,7 @@ fn main() -> color_eyre::Result<()> {
         move || -> color_eyre::Result<()> {
             // block the tui on the same runtime as above
             tui_rt.block_on(async {
-                let mut tui = TuiApp::new(args.tick_rate, args.frame_rate, kh).await?;
+                let mut tui = TuiApp::new(args.tick_rate, args.frame_rate, kh, signal_tx).await?;
                 tui.run().await?;
                 // just close everything as soon as the tui is done running
                 process::exit(0);
@@ -66,26 +68,23 @@ fn main() -> color_eyre::Result<()> {
         }
     });
 
-    let fh = rt.block_on(async {
-        Arc::new(std::sync::Mutex::new(Filaments::from(
-            &kh.read().await.index,
-        )))
-    });
     // spawn deimos
-    {
-        let fh = fh.clone();
+    // {
 
-        rt.spawn(async {
-            let deimos = Deimos::new(kh, fh);
-            deimos.watch().await
-        });
-    }
+    //     rt.spawn(async {
+    //         let deimos = Deimos::new(kh, fh);
+    //         deimos.watch().await
+    //     });
+    // }
 
     // if they asked for the visualizer, we give them the visualizer
     if args.visualizer {
         // enter the guard so egui_async works properly
         let _rt_guard = rt.enter();
-        FilViz::run(fh)?;
+
+        let index = rt.block_on(async { kh.read().await.index.clone() });
+
+        FilViz::run(kh, signal_rx, &index)?;
     }
 
     // join on the tui
