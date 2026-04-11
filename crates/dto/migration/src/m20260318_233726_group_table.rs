@@ -110,4 +110,7 @@ pub enum Group {
 
     /// Last modified
     ModifiedAt,
+
+    /// Tag Id
+    TagId,
 }

@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use dto::NanoId;
 
 use crate::config::{get_config_dir, get_data_dir};
 
@@ -29,6 +30,9 @@ pub enum Commands {
     #[command(subcommand)]
     Zettel(ZettelSubcommand),
 
+    #[command(subcommand)]
+    Todo(TodoSubcommand),
+
     /// Spawn the `LSP`
     Lsp,
 
@@ -58,7 +62,7 @@ pub enum Commands {
 }
 
 #[derive(Subcommand, Debug)]
-/// Subcommand to manage tars groups.
+/// Subcommand to manage Zettels.
 pub enum ZettelSubcommand {
     /// Add a group.
     New {
@@ -71,6 +75,20 @@ pub enum ZettelSubcommand {
         /// Filter by tag
         #[arg(short = 't', long)]
         by_tag: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+/// Subcommand to manage To-Do functionality
+pub enum TodoSubcommand {
+    Group {
+        /// The name of this group
+        #[arg(short, long)]
+        name: String,
+
+        /// If this group has a parent, provide the parent id.
+        #[arg(short, long)]
+        parent_id: Option<NanoId>,
     },
 }
 

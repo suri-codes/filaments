@@ -16,13 +16,14 @@ pub struct Model {
     #[sea_orm(unique)]
     pub nano_id: NanoId,
     pub name: String,
-    pub color: Color,
     pub priority: Priority,
     pub created_at: DateTime,
     pub modified_at: DateTime,
     #[sea_orm(unique)]
     pub zettel_id: NanoId,
     pub parent_group_id: Option<NanoId>,
+    #[sea_orm(unique)]
+    pub tag_id: String,
     #[sea_orm(
         self_ref,
         relation_enum = "SelfRef",
@@ -32,6 +33,14 @@ pub struct Model {
         on_delete = "Cascade"
     )]
     pub group: HasOne<Entity>,
+    #[sea_orm(
+        belongs_to,
+        from = "tag_id",
+        to = "nano_id",
+        on_update = "Cascade",
+        on_delete = "Cascade"
+    )]
+    pub tag: HasOne<super::tag::Entity>,
     #[sea_orm(has_many)]
     pub tasks: HasMany<super::task::Entity>,
     #[sea_orm(
