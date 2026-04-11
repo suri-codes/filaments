@@ -13,6 +13,8 @@ pub use sea_orm::EntityTrait;
 pub use sea_orm::IntoActiveModel;
 pub use sea_orm::QueryFilter;
 pub use sea_orm::QueryOrder;
+pub use sea_orm::entity::compound::HasMany;
+pub use sea_orm::entity::compound::HasOne;
 
 /// Exporting this as a generic NanoId.
 pub use migration::types::NanoId;

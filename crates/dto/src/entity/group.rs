@@ -2,8 +2,8 @@
 
 use migration::prelude::Local;
 use migration::types::*;
-use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue::Set;
+use sea_orm::entity::prelude::*;
 use std::future::ready;
 use std::pin::Pin;
 

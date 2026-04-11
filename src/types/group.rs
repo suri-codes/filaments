@@ -12,6 +12,7 @@ pub struct Group {
     pub id: NanoId,
     pub name: String,
     pub priority: Priority,
+    pub parent_id: Option<NanoId>,
     pub created_at: DateTime,
     pub modified_at: DateTime,
     /// The `Zettel` that is related to this `Group`.
@@ -30,6 +31,7 @@ impl From<GroupModelEx> for Group {
             id: value.nano_id,
             name: value.name,
             priority: value.priority.into(),
+            parent_id: value.parent_group_id,
             created_at: value.created_at,
             modified_at: value.modified_at,
             zettel: value

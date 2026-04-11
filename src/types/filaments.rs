@@ -6,7 +6,7 @@ use egui_graphs::{
     petgraph::{Directed, graph::NodeIndex, prelude::StableGraph},
 };
 
-use crate::types::{Index, Link, ZettelId, index::ZettelOnDisk};
+use crate::types::{Index, Link, ZettelId, kasten::ZettelOnDisk};
 
 pub type ZkGraph = Graph<ZettelId, Link, Directed>;
 

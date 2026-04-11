@@ -59,6 +59,7 @@ pub enum Commands {
     // default values if they arent present / aren't able to be
     // parsed properly
     // Import(ImportArgs),
+    Test,
 }
 
 #[derive(Subcommand, Debug)]
@@ -89,6 +90,16 @@ pub enum TodoSubcommand {
         /// If this group has a parent, provide the parent id.
         #[arg(short, long)]
         parent_id: Option<NanoId>,
+    },
+
+    Task {
+        /// Name of the task
+        #[arg(short, long)]
+        name: String,
+
+        /// Parent group of the task
+        #[arg(short, long)]
+        parent_id: NanoId,
     },
 }
 

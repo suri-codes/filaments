@@ -41,7 +41,7 @@ impl Viewport<'_> {
             _layouts: Layouts::default(),
             switcher,
             zk: Zk::new(kh.clone()).await?,
-            todo: Todo::new(kh.clone()),
+            todo: Todo::new(kh.clone()).await?,
             active_region: Region::default(),
             kh,
         })

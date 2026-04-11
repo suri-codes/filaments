@@ -15,7 +15,6 @@ mod group;
 pub use group::Group;
 
 mod task;
-#[expect(unused_imports)]
 pub use task::Task;
 
 mod link;
@@ -24,12 +23,15 @@ pub use link::Link;
 mod filaments;
 pub use filaments::Filaments;
 
-mod index;
-pub use index::Index;
-
 mod kasten;
+
+pub use kasten::Index;
 pub use kasten::Kasten;
 pub use kasten::KastenHandle;
+#[expect(unused_imports)]
+pub use kasten::TodoNode;
+#[expect(unused_imports)]
+pub use kasten::TodoTree;
 
 mod frontmatter;
 pub use frontmatter::FrontMatter;
