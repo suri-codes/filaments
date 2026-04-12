@@ -14,14 +14,16 @@ use crate::{
 
 mod explorer;
 use explorer::Explorer;
+mod tasklist;
+use tasklist::TaskList;
 
 pub struct Todo<'text> {
     #[expect(dead_code)]
     signal_tx: Option<UnboundedSender<Signal>>,
     kh: KastenHandle,
-    #[expect(dead_code)]
     layouts: Layouts,
     explorer: Explorer<'text>,
+    task_list: TaskList<'text>,
 }
 
 impl Todo<'_> {
@@ -31,6 +33,7 @@ impl Todo<'_> {
         let mut l_state = ListState::default();
         l_state.select_first();
         let explorer = Explorer::new(&kt.todo_tree, &kt.todo_tree.root_id, l_state, 0);
+        let task_list = TaskList::new(&kt.todo_tree, &kt.todo_tree.root_id, l_state, 0);
 
         drop(kt);
 
@@ -39,11 +42,11 @@ impl Todo<'_> {
             layouts: Layouts::default(),
             signal_tx: None,
             explorer,
+            task_list,
         })
     }
 }
 
-#[expect(dead_code)]
 struct Layouts {
     main: Layout,
 }
@@ -60,13 +63,12 @@ impl Default for Layouts {
 impl Component for Todo<'_> {
     async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
         let total_width = area.width;
-
-        let mut l_state = ListState::default();
-        l_state.select_first();
         let tree = &self.kh.read().await.todo_tree;
 
-        let explorer = Explorer::new(tree, &tree.root_id, l_state, total_width);
+        let explorer = Explorer::new(tree, &tree.root_id, self.explorer.state, total_width / 2);
+        let task_list = TaskList::new(tree, &tree.root_id, self.task_list.state, total_width / 2);
         self.explorer = explorer;
+        self.task_list = task_list;
 
         Ok(())
     }
@@ -87,7 +89,22 @@ impl Component for Todo<'_> {
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::Result<()> {
-        frame.render_stateful_widget(&self.explorer.render_list, area, &mut self.explorer.state);
+        let (explorer_rect, task_list_rect) = {
+            let rects = self.layouts.main.split(area);
+            (rects[0], rects[1])
+        };
+
+        frame.render_stateful_widget(
+            &self.explorer.render_list,
+            explorer_rect,
+            &mut self.explorer.state,
+        );
+
+        frame.render_stateful_widget(
+            &self.task_list.render_list,
+            task_list_rect,
+            &mut self.task_list.state,
+        );
         Ok(())
     }
 }

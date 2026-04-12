@@ -1,5 +1,5 @@
 use ratatui::{
-    style::{Color, Modifier},
+    style::{Color, Modifier, Stylize},
     text::{Line, Span, Text},
     widgets::{List, ListState},
 };
@@ -39,7 +39,7 @@ impl Explorer<'_> {
         let id_list = tree
             .tree
             .traverse_pre_order_ids(scope)
-            .expect("This should nto panic as the node id should exist inside")
+            .expect("This should not panic as the node id should exist inside")
             .collect::<Vec<_>>();
 
         Self {
@@ -61,7 +61,7 @@ impl From<&TodoNode> for ExplorerListItem<'_> {
     fn from(value: &TodoNode) -> Self {
         let spacer = Span::from(" ".repeat(value.depth));
         let name = match value.kind {
-            TodoNodeKind::Group(ref g) => Span::from(g.name.clone()),
+            TodoNodeKind::Group(ref g) => Span::from(g.name.clone()).bg(g.tag.color),
             TodoNodeKind::Task(ref t) => Span::from(t.name.clone()),
             TodoNodeKind::Root => Span::from("THIS SHOULD NOT BE VISIBLE"),
         };
