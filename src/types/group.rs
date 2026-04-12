@@ -3,8 +3,7 @@ use dto::{DateTime, GroupModelEx, NanoId};
 use crate::types::{Priority, Tag, Zettel};
 
 /// A `Group` which contains tasks!
-#[expect(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Group {
     /// Should only be constructed from models.
     _private: (),

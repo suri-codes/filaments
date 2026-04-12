@@ -19,7 +19,8 @@ pub use id::ZettelId;
 /// A `Zettel` is a note about a single idea.
 /// It can have many `Tag`s, just meaning it can fall under many
 /// categories.
-#[derive(Debug, Clone)]
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Zettel {
     /// Should only be constructed from models.
     _private: (),

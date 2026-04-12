@@ -2,7 +2,7 @@ use dto::PriorityDTO;
 
 /// An Enum for the various `Priority` levels
 /// for `Task`s and `Group`s
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Priority {
     field1: PriorityDTO,
 }

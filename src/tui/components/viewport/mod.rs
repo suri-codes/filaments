@@ -25,7 +25,7 @@ pub struct Viewport<'text> {
     switcher: Switcher<'text>,
     active_region: Region,
     zk: Zk<'text>,
-    todo: Todo,
+    todo: Todo<'text>,
 }
 
 mod switcher;

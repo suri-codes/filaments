@@ -9,27 +9,40 @@ use tree::{InsertBehavior, Node, NodeId, Tree};
 
 use crate::types::{Group, Task};
 
-#[expect(dead_code)]
-#[derive(Debug, Clone)]
-pub enum TodoNode {
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum TodoNodeKind {
     Root,
     Group(Box<Group>),
     Task(Box<Task>),
 }
 
+#[derive(Debug, Clone)]
+pub struct TodoNode {
+    pub depth: usize,
+    pub kind: TodoNodeKind,
+}
+
+impl TodoNode {
+    pub const fn new(kind: TodoNodeKind, depth: usize) -> Self {
+        Self { depth, kind }
+    }
+}
+
 #[derive(Debug)]
 pub struct TodoTree {
-    tree: Tree<TodoNode>,
-    nanoid_to_nodeid: HashMap<NanoId, NodeId>,
-    #[expect(dead_code)]
-    root_id: NodeId,
+    pub tree: Tree<TodoNode>,
+    pub nanoid_to_nodeid: HashMap<NanoId, NodeId>,
+    pub root_id: NodeId,
 }
 
 impl TodoTree {
     pub async fn construct(db: &DatabaseConnection) -> Result<Self> {
         let mut tree = Tree::<TodoNode>::new();
         let root_id = tree
-            .insert(Node::new(TodoNode::Root), InsertBehavior::AsRoot)
+            .insert(
+                Node::new(TodoNode::new(TodoNodeKind::Root, 0)),
+                InsertBehavior::AsRoot,
+            )
             .with_context(|| "Could not create root node.")?;
 
         let root_groups: Vec<Group> = GroupEntity::load()
@@ -51,7 +64,7 @@ impl TodoTree {
 
         for group in root_groups {
             todo_tree
-                .add_group_to_tree(db, &root_id, Box::new(group))
+                .add_group_to_tree(db, &root_id, Box::new(group), 0)
                 .await?;
         }
 
@@ -64,11 +77,12 @@ impl TodoTree {
         db: &DatabaseConnection,
         parent_node_id: &NodeId,
         group: Box<Group>,
+        depth: usize,
     ) -> Result<()> {
         let group_id = group.id.clone();
 
         let group_node_id = self.tree.insert(
-            Node::new(TodoNode::Group(group)),
+            Node::new(TodoNode::new(TodoNodeKind::Group(group), depth)),
             InsertBehavior::UnderNode(parent_node_id),
         )?;
 
@@ -98,7 +112,7 @@ impl TodoTree {
         for task in tasks {
             let task_id = task.id.clone();
             let task_node_id = self.tree.insert(
-                Node::new(TodoNode::Task(Box::new(task))),
+                Node::new(TodoNode::new(TodoNodeKind::Task(Box::new(task)), depth + 1)),
                 InsertBehavior::UnderNode(&group_node_id),
             )?;
 
@@ -117,7 +131,7 @@ impl TodoTree {
             .collect();
 
         for group in children_groups {
-            self.add_group_to_tree(db, &group_node_id, Box::new(group))
+            self.add_group_to_tree(db, &group_node_id, Box::new(group), depth + 1)
                 .await?;
         }
 

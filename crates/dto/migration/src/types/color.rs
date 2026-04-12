@@ -6,7 +6,7 @@ use std::fmt::{Debug, Display};
 /// Color type
 ///
 /// We store it as a u32, but its actually 00000000rrrrrrrrggggggggbbbbbbbb
-#[derive(Clone, Copy, PartialEq, Eq, DeriveValueType)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Copy, DeriveValueType)]
 pub struct Color(u32);
 
 impl Color {

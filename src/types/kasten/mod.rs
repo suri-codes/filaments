@@ -17,7 +17,8 @@ mod index;
 pub use index::Index;
 pub use index::ZettelOnDisk;
 mod todo_tree;
-pub use todo_tree::{TodoNode, TodoTree};
+
+pub use todo_tree::{TodoNode, TodoNodeKind, TodoTree};
 
 #[derive(Debug)]
 pub struct Kasten {

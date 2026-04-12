@@ -1,14 +1,9 @@
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
-use dto::{
-    ColumnTrait as _, GroupColumns, GroupEntity, QueryFilter as _, TagEntity, TaskEntity,
-    ZettelEntity,
-};
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect, Size},
-    style::{Color, Stylize},
-    widgets::Block,
+    widgets::ListState,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -18,25 +13,24 @@ use crate::{
 };
 
 mod explorer;
+use explorer::Explorer;
 
-#[expect(dead_code)]
-pub struct Todo {
+pub struct Todo<'text> {
+    #[expect(dead_code)]
     signal_tx: Option<UnboundedSender<Signal>>,
     kh: KastenHandle,
+    #[expect(dead_code)]
     layouts: Layouts,
+    explorer: Explorer<'text>,
 }
 
-impl Todo {
+impl Todo<'_> {
     pub async fn new(kh: KastenHandle) -> Result<Self> {
         let kt = kh.read().await;
 
-        let _roots = GroupEntity::load()
-            .with(TagEntity)
-            .with(TaskEntity)
-            .with((ZettelEntity, TagEntity))
-            .filter(GroupColumns::ParentGroupId.is_null())
-            .all(&kt.db)
-            .await?;
+        let mut l_state = ListState::default();
+        l_state.select_first();
+        let explorer = Explorer::new(&kt.todo_tree, &kt.todo_tree.root_id, l_state, 0);
 
         drop(kt);
 
@@ -44,6 +38,7 @@ impl Todo {
             kh,
             layouts: Layouts::default(),
             signal_tx: None,
+            explorer,
         })
     }
 }
@@ -62,20 +57,37 @@ impl Default for Layouts {
 }
 
 #[async_trait]
-impl Component for Todo {
+impl Component for Todo<'_> {
     async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
-        let _ = area; // to appease clippy
+        let total_width = area.width;
+
+        let mut l_state = ListState::default();
+        l_state.select_first();
+        let tree = &self.kh.read().await.todo_tree;
+
+        let explorer = Explorer::new(tree, &tree.root_id, l_state, total_width);
+        self.explorer = explorer;
 
         Ok(())
     }
 
-    async fn update(&mut self, _signal: Signal) -> color_eyre::Result<Option<Signal>> {
+    async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
+        match signal {
+            Signal::MoveDown => {
+                self.explorer.state.select_next();
+                // self.update_views_from_zettel_list_selection().await?;
+            }
+
+            Signal::MoveUp => {
+                self.explorer.state.select_previous();
+            }
+            _ => {}
+        }
         Ok(None)
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::Result<()> {
-        frame.render_widget(Block::new().bg(Color::Red), area);
-
+        frame.render_stateful_widget(&self.explorer.render_list, area, &mut self.explorer.state);
         Ok(())
     }
 }

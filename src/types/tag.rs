@@ -4,7 +4,7 @@ use crate::types::Color;
 
 /// Represents a `Tag` in a `ZettelKasten` note taking method.
 /// Easy way to link multiple notes under one simple word.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Tag {
     /// Should only be constructed from models.
     _private: (),

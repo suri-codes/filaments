@@ -24,13 +24,11 @@ mod filaments;
 pub use filaments::Filaments;
 
 mod kasten;
-
 pub use kasten::Index;
 pub use kasten::Kasten;
 pub use kasten::KastenHandle;
-#[expect(unused_imports)]
 pub use kasten::TodoNode;
-#[expect(unused_imports)]
+pub use kasten::TodoNodeKind;
 pub use kasten::TodoTree;
 
 mod frontmatter;
