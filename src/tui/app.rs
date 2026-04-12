@@ -39,8 +39,8 @@ pub struct App {
     Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, Display,
 )]
 pub enum Region {
-    #[default]
     Zk,
+    #[default]
     Todo,
 }
 

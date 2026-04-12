@@ -1,8 +1,9 @@
 use ratatui::{
-    style::{Color, Modifier, Stylize},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{List, ListState},
+    widgets::{Block, BorderType, Borders, List, ListState},
 };
+use tracing::info;
 use tree::NodeId;
 
 use crate::types::{TodoNode, TodoNodeKind, TodoTree};
@@ -33,7 +34,7 @@ impl Explorer<'_> {
                 }),
         )
         .style(Color::White)
-        .highlight_style(Modifier::REVERSED)
+        .highlight_style(Modifier::ITALIC | Modifier::BOLD)
         .highlight_symbol("> ");
 
         let id_list = tree
@@ -49,6 +50,29 @@ impl Explorer<'_> {
             width,
         }
     }
+
+    pub fn set_active(&mut self) {
+        self.render_list = self.render_list.clone().block(
+            Block::new()
+                .title("[1]")
+                .title("Explorer")
+                .borders(Borders::TOP | Borders::RIGHT)
+                .border_style(Style::new().fg(Color::Green))
+                .border_type(BorderType::Rounded),
+        );
+    }
+
+    #[expect(dead_code)]
+    pub fn set_inactive(&mut self) {
+        self.render_list = self.render_list.clone().block(
+            Block::new()
+                .title("[1]")
+                .title("Explorer")
+                .borders(Borders::TOP | Borders::RIGHT)
+                .border_style(Style::new().fg(Color::Gray))
+                .border_type(BorderType::Rounded),
+        );
+    }
 }
 
 pub struct ExplorerListItem<'text> {
@@ -59,10 +83,14 @@ pub struct ExplorerListItem<'text> {
 
 impl From<&TodoNode> for ExplorerListItem<'_> {
     fn from(value: &TodoNode) -> Self {
-        let spacer = Span::from(" ".repeat(value.depth));
+        let spacer = Span::from("  ".repeat(value.depth));
         let name = match value.kind {
-            TodoNodeKind::Group(ref g) => Span::from(g.name.clone()).bg(g.tag.color),
-            TodoNodeKind::Task(ref t) => Span::from(t.name.clone()),
+            TodoNodeKind::Group(ref g) => Span::from(format!(" {}", g.name.clone()))
+                .bg(g.tag.color)
+                .fg(Color::Black),
+            TodoNodeKind::Task(ref t) => {
+                Span::from(format!(" {}", t.name.clone())).fg(t.group.tag.color)
+            }
             TodoNodeKind::Root => Span::from("THIS SHOULD NOT BE VISIBLE"),
         };
 
@@ -76,7 +104,23 @@ impl From<&TodoNode> for ExplorerListItem<'_> {
 
 impl<'text> From<ExplorerListItem<'text>> for Text<'text> {
     fn from(value: ExplorerListItem<'text>) -> Self {
-        let line = Line::from(vec![value.spacer, value.name]);
-        line.into()
+        let bg_color = value.name.style.bg;
+        let spacer_width = value.spacer.content.len();
+        let name_width = value.name.content.len();
+        let used = spacer_width + name_width;
+
+        let mut spans = vec![value.spacer, value.name];
+
+        if let Some(color) = bg_color {
+            let padding = (value.width as usize).saturating_sub(used);
+            spans.push(Span::styled(
+                " ".repeat(padding),
+                Style::default().bg(color),
+            ));
+        }
+
+        info!("{spans:#?}");
+
+        Line::from(spans).into()
     }
 }

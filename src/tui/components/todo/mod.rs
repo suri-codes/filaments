@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use color_eyre::eyre::Result;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect, Size},
@@ -22,28 +21,19 @@ pub struct Todo<'text> {
     signal_tx: Option<UnboundedSender<Signal>>,
     kh: KastenHandle,
     layouts: Layouts,
-    explorer: Explorer<'text>,
-    task_list: TaskList<'text>,
+    explorer: Option<Explorer<'text>>,
+    task_list: Option<TaskList<'text>>,
 }
 
 impl Todo<'_> {
-    pub async fn new(kh: KastenHandle) -> Result<Self> {
-        let kt = kh.read().await;
-
-        let mut l_state = ListState::default();
-        l_state.select_first();
-        let explorer = Explorer::new(&kt.todo_tree, &kt.todo_tree.root_id, l_state, 0);
-        let task_list = TaskList::new(&kt.todo_tree, &kt.todo_tree.root_id, l_state, 0);
-
-        drop(kt);
-
-        Ok(Self {
+    pub fn new(kh: KastenHandle) -> Self {
+        Self {
             kh,
             layouts: Layouts::default(),
             signal_tx: None,
-            explorer,
-            task_list,
-        })
+            explorer: None,
+            task_list: None,
+        }
     }
 }
 
@@ -65,23 +55,40 @@ impl Component for Todo<'_> {
         let total_width = area.width;
         let tree = &self.kh.read().await.todo_tree;
 
-        let explorer = Explorer::new(tree, &tree.root_id, self.explorer.state, total_width / 2);
-        let task_list = TaskList::new(tree, &tree.root_id, self.task_list.state, total_width / 2);
-        self.explorer = explorer;
-        self.task_list = task_list;
+        let mut l_state = ListState::default();
+
+        l_state.select_first();
+
+        let mut explorer = Explorer::new(tree, &tree.root_id, l_state, total_width / 2);
+        let task_list = TaskList::new(tree, &tree.root_id, l_state, total_width / 2);
+
+        explorer.set_active();
+
+        self.explorer = Some(explorer);
+        self.task_list = Some(task_list);
 
         Ok(())
     }
 
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
+        let explorer = self
+            .explorer
+            .as_mut()
+            .expect("This should have already been initialized");
+
+        let _task_list = self
+            .task_list
+            .as_mut()
+            .expect("This should have already been initialized");
+
         match signal {
             Signal::MoveDown => {
-                self.explorer.state.select_next();
+                explorer.state.select_next();
                 // self.update_views_from_zettel_list_selection().await?;
             }
 
             Signal::MoveUp => {
-                self.explorer.state.select_previous();
+                explorer.state.select_previous();
             }
             _ => {}
         }
@@ -94,17 +101,11 @@ impl Component for Todo<'_> {
             (rects[0], rects[1])
         };
 
-        frame.render_stateful_widget(
-            &self.explorer.render_list,
-            explorer_rect,
-            &mut self.explorer.state,
-        );
+        let explorer = self.explorer.as_mut().unwrap();
+        let task_list = self.task_list.as_mut().unwrap();
 
-        frame.render_stateful_widget(
-            &self.task_list.render_list,
-            task_list_rect,
-            &mut self.task_list.state,
-        );
+        frame.render_stateful_widget(&explorer.render_list, explorer_rect, &mut explorer.state);
+        frame.render_stateful_widget(&task_list.render_list, task_list_rect, &mut task_list.state);
         Ok(())
     }
 }
