@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 
-use autosurgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -156,7 +155,11 @@ impl<T> TreeBuilder<T> {
 /// Any function that takes a `NodeId` can `panic`, but this should
 /// only happen with improper `NodeId` management within `tree`, and
 /// should have nothing to do with library user's code.
-#[derive(Debug, Serialize, Deserialize, Reconcile, Hydrate)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "automerge",
+    derive(autosurgeon::Reconcile, autosurgeon::Hydrate)
+)]
 pub struct Tree<T> {
     root: Option<NodeId>,
     pub(crate) nodes: Vec<Option<Node<T>>>,

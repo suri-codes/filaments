@@ -5,7 +5,6 @@
 //!
 //! TODO: add example usage
 
-use autosurgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
 
 mod behaviors;
@@ -32,9 +31,8 @@ pub use iterators::PreOrderTraversalIds;
 pub use error::NodeIdError;
 
 /// A Node Id
-#[derive(
-    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Reconcile, Hydrate,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "automerge", derive(Reconcile, Hydrate))]
 pub struct NodeId {
     index: u32,
 }

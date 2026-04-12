@@ -1,9 +1,9 @@
-use autosurgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
 
 use crate::NodeId;
 
-#[derive(Debug, Serialize, Deserialize, Reconcile, Hydrate, Ord, Eq, PartialOrd)]
+#[derive(Debug, Serialize, Deserialize, Ord, Eq, PartialOrd)]
+#[cfg_attr(feature = "automerge", derive(Reconcile, Hydrate))]
 pub struct Node<T> {
     pub(crate) data: T,
     pub(crate) parent: Option<NodeId>,

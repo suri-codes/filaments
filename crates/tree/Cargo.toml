@@ -8,10 +8,13 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-automerge = "0.7.4"
-autosurgeon = "0.10.1"
+automerge = {version = "0.7.4", optional = true}
+autosurgeon = {version = "0.10.1", optional =  true}
 serde.workspace = true
 
+
+[features]
+automerge = ["dep:automerge", "dep:autosurgeon"]
 
 [lints.clippy]
 pedantic = "deny"
