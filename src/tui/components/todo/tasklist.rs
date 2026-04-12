@@ -1,8 +1,8 @@
 #![expect(dead_code)]
 use ratatui::{
-    style::{Color, Modifier},
+    style::{Color, Style},
     text::{Line, Span, Text},
-    widgets::{List, ListState},
+    widgets::{Block, BorderType, Borders, List, ListState},
 };
 use tree::NodeId;
 
@@ -42,8 +42,8 @@ impl TaskList<'_> {
                 }),
         )
         .style(Color::White)
-        .highlight_style(Modifier::REVERSED)
-        .highlight_symbol("> ");
+        .highlight_style(Style::new().on_dark_gray());
+        // .highlight_symbol("> ");
 
         Self {
             render_list,
@@ -51,6 +51,28 @@ impl TaskList<'_> {
             state,
             width,
         }
+    }
+
+    pub fn set_active(&mut self) {
+        self.render_list = self.render_list.clone().block(
+            Block::new()
+                .title("[2]")
+                .title("TodoList")
+                .borders(Borders::TOP | Borders::LEFT)
+                .border_style(Style::new().fg(Color::Green))
+                .border_type(BorderType::Rounded),
+        );
+    }
+
+    pub fn set_inactive(&mut self) {
+        self.render_list = self.render_list.clone().block(
+            Block::new()
+                .title("[2]")
+                .title("TodoList")
+                .borders(Borders::TOP | Borders::LEFT)
+                .border_style(Style::new().fg(Color::Gray))
+                .border_type(BorderType::Rounded),
+        );
     }
 }
 
@@ -69,12 +91,14 @@ impl From<&TodoNode> for TaskListItem<'_> {
             panic!("Should not be possible");
         };
 
-        let name = Span::from(task.name.clone());
-        let group = Span::from(task.group.name.clone());
-        let due_priority = task.due.map_or_else(
-            || Span::from(task.priority.to_string()),
-            |due_date| Span::from(due_date.to_string()),
-        );
+        let color = task.group.tag.color;
+
+        let name = Span::from(task.name.clone()).style(Style::new().fg(color.into()));
+        let group = Span::from(task.group.name.clone()).style(Style::new().fg(color.into()));
+        let due_priority = task
+            .due()
+            .map_or_else(|| Span::from(task.priority.to_string()), Span::from)
+            .style(Style::new().fg(color.into()));
 
         Self {
             name,
@@ -87,7 +111,20 @@ impl From<&TodoNode> for TaskListItem<'_> {
 
 impl<'text> From<TaskListItem<'text>> for Text<'text> {
     fn from(value: TaskListItem<'text>) -> Self {
-        let line = Line::from(vec![value.name, value.group, value.due_priority]);
-        line.into()
+        let total_width = value.width.saturating_sub(2) as usize;
+        let name_col = total_width / 2;
+        let due_content = value.due_priority.content.as_ref();
+        let due_col = due_content.len();
+        let group_col = total_width.saturating_sub(name_col + due_col);
+
+        let name_str = format!("{:<width$}", value.name.content, width = name_col);
+        let group_str = format!("{:<width$}", value.group.content, width = group_col);
+        let due_str = format!("{due_content:>due_col$}");
+
+        let name = Span::styled(name_str, value.name.style);
+        let group = Span::styled(group_str, value.group.style);
+        let due = Span::styled(due_str, value.due_priority.style);
+
+        Line::from(vec![name, group, due]).into()
     }
 }

@@ -109,7 +109,6 @@ impl Component for Viewport<'_> {
             Region::Todo => self.todo.draw(frame, area),
         }?;
 
-        // frame.render_widget(self.switcher.clone(), area);
         Ok(())
     }
 }

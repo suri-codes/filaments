@@ -6,8 +6,8 @@ use std::{
 
 use color_eyre::eyre::{Context, Result, eyre};
 use dto::{
-    GroupActiveModel, GroupEntity, HasOne, IntoActiveModel, TagActiveModel, TagEntity,
-    TaskActiveModel, TaskEntity, ZettelEntity,
+    Date, DateTime, GroupActiveModel, GroupEntity, HasOne, IntoActiveModel, TagActiveModel,
+    TagEntity, TaskActiveModel, TaskEntity, Time, ZettelEntity,
 };
 use tower_lsp::{LspService, Server};
 
@@ -158,6 +158,10 @@ impl Commands {
                                     .expect("Zettel must exist since we just created it")
                                     .into_active_model(),
                             )
+                            .set_due(Some(DateTime::new(
+                                Date::from_ymd_opt(2026, 1, 31).unwrap(),
+                                Time::from_hms_opt(10, 10, 10).unwrap(),
+                            )))
                             .insert(&kt.db)
                             .await?;
 
