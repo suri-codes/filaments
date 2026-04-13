@@ -10,7 +10,7 @@
         keybinds: {
             "enter": OpenZettel,
             "tab": SwitchTo(
-                region: Todo,
+                page: Todo(Explorer),
             ),
             "<Ctrl-n>": NewZettel,
         },
@@ -20,7 +20,7 @@
             "k": MoveUp,
             "j": MoveDown,
             "tab": SwitchTo(
-                region: Zk,
+                page: Zk,
             ),
         },
     ),

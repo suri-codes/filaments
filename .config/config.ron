@@ -1,27 +1,48 @@
 (
     directory: "/Users/suri/dev/projects/filaments/ZettelKasten",
     global_key_binds: {
-        "up": MoveUp,
+        "up":     MoveUp,
+        "down":   MoveDown,
         "ctrl-z": Suspend,
         "ctrl-c": Quit,
-        "down": MoveDown,
     },
     zk: (
         keybinds: {
-            "tab": SwitchTo(
-                region: Todo,
-            ),
-            "<Ctrl-n>": NewZettel,
-            "enter": OpenZettel,
+            "tab": SwitchTo(page: Todo(Explorer)),
+            "ctrl-n": NewZettel,
+            "enter":  OpenZettel,
         },
     ),
     todo: (
-        keybinds: {
-            "j": MoveDown,
-            "tab": SwitchTo(
-                region: Zk,
-            ),
-            "k": MoveUp,
-        },
+        explorer: (
+            keybinds: {
+                "tab": SwitchTo(page: Zk),
+                "1": SwitchTo(page: Todo(Explorer)),
+                "2": SwitchTo(page: Todo(Inspector)),
+                "3": SwitchTo(page: Todo(TaskList)),
+                "j": MoveDown,
+                "k": MoveUp,
+            },
+        ),
+        inspector: (
+            keybinds: {
+                "tab": SwitchTo(page: Zk),
+                "1": SwitchTo(page: Todo(Explorer)),
+                "2": SwitchTo(page: Todo(Inspector)),
+                "3": SwitchTo(page: Todo(TaskList)),
+                "j": MoveDown,
+                "k": MoveUp,
+            },
+        ),
+        tasklist: (
+            keybinds: {
+                "tab": SwitchTo(page: Zk),
+                "1": SwitchTo(page: Todo(Explorer)),
+                "2": SwitchTo(page: Todo(Inspector)),
+                "3": SwitchTo(page: Todo(TaskList)),
+                "j": MoveDown,
+                "k": MoveUp,
+            },
+        ),
     ),
 )

@@ -51,7 +51,6 @@ impl Explorer<'_> {
         }
     }
 
-    #[expect(dead_code)]
     pub fn set_active(&mut self) {
         self.render_list = self.render_list.clone().block(
             Block::new()

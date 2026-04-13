@@ -56,8 +56,8 @@ impl TaskList<'_> {
     pub fn set_active(&mut self) {
         self.render_list = self.render_list.clone().block(
             Block::new()
-                .title("[2]")
-                .title("TodoList")
+                .title("[3]")
+                .title("TaskList")
                 .borders(Borders::TOP | Borders::LEFT)
                 .border_style(Style::new().fg(Color::Green))
                 .border_type(BorderType::Rounded),
@@ -67,8 +67,8 @@ impl TaskList<'_> {
     pub fn set_inactive(&mut self) {
         self.render_list = self.render_list.clone().block(
             Block::new()
-                .title("[2]")
-                .title("TodoList")
+                .title("[3]")
+                .title("TaskList")
                 .borders(Borders::TOP | Borders::LEFT)
                 .border_style(Style::new().fg(Color::Gray))
                 .border_type(BorderType::Rounded),

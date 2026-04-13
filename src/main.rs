@@ -41,6 +41,9 @@ fn main() -> color_eyre::Result<()> {
     // create the kasten handle
     let kh: KastenHandle = rt.block_on(async {
         let cfg = Config::parse()?;
+
+        debug!("Config: {cfg:#?}");
+
         Ok::<KastenHandle, color_eyre::Report>(Arc::new(RwLock::new(
             Kasten::instansiate(cfg.fil_dir).await?,
         )))

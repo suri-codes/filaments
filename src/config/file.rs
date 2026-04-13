@@ -19,6 +19,21 @@ pub struct ZkConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TodoConfig {
+    pub explorer: ExplorerConfig,
+    pub inspector: InspectorConfig,
+    pub tasklist: TaskListConfig,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ExplorerConfig {
+    pub keybinds: HashMap<String, Signal>,
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct InspectorConfig {
+    pub keybinds: HashMap<String, Signal>,
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TaskListConfig {
     pub keybinds: HashMap<String, Signal>,
 }
 
@@ -40,10 +55,24 @@ mod tests {
                 ]),
             },
             todo: TodoConfig {
-                keybinds: HashMap::from([
-                    ("<Space>".to_string(), Signal::NewZettel),
-                    ("<Esc>".to_string(), Signal::MoveUp),
-                ]),
+                explorer: ExplorerConfig {
+                    keybinds: HashMap::from([
+                        ("<Space>".to_string(), Signal::NewZettel),
+                        ("<Esc>".to_string(), Signal::MoveUp),
+                    ]),
+                },
+                inspector: InspectorConfig {
+                    keybinds: HashMap::from([
+                        ("<Space>".to_string(), Signal::NewZettel),
+                        ("<Esc>".to_string(), Signal::MoveUp),
+                    ]),
+                },
+                tasklist: TaskListConfig {
+                    keybinds: HashMap::from([
+                        ("<Space>".to_string(), Signal::NewZettel),
+                        ("<Esc>".to_string(), Signal::MoveUp),
+                    ]),
+                },
             },
         };
 

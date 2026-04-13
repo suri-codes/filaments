@@ -18,6 +18,27 @@ use groupview::GroupView;
 pub struct Inspector<'text> {
     render_data: RenderData<'text>,
     margins: Layout,
+    block: Block<'text>,
+}
+
+impl Inspector<'_> {
+    pub fn set_active(&mut self) {
+        self.block = Block::new()
+            .title("[2]")
+            .title("Inspector")
+            .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
+            .border_style(Style::new().fg(Color::Green))
+            .border_type(BorderType::Rounded);
+    }
+
+    pub fn set_inactive(&mut self) {
+        self.block = Block::new()
+            .title("[2]")
+            .title("Inspector")
+            .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
+            .border_style(Style::new().fg(Color::Gray))
+            .border_type(BorderType::Rounded);
+    }
 }
 
 enum RenderData<'text> {
@@ -32,24 +53,33 @@ impl From<&TodoNode> for Inspector<'_> {
             .horizontal_margin(3)
             .vertical_margin(2);
 
+        let block = Block::new()
+            .title("[2]")
+            .title("Inspector")
+            .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
+            .border_style(Style::new().fg(Color::Gray))
+            .border_type(BorderType::Rounded);
         match value.kind {
             TodoNodeKind::Root => Self {
                 render_data: RenderData::Root {
                     widget: Box::new(RootView::default()),
                 },
                 margins,
+                block,
             },
             TodoNodeKind::Group(ref group) => Self {
                 render_data: RenderData::Group {
                     widget: Box::new(GroupView::from(&**group)),
                 },
                 margins,
+                block,
             },
             TodoNodeKind::Task(ref task) => Self {
                 render_data: RenderData::Task {
                     widget: Box::new(TaskView::from(&**task)),
                 },
                 margins,
+                block,
             },
         }
     }
@@ -60,14 +90,7 @@ impl Widget for &Inspector<'_> {
     where
         Self: Sized,
     {
-        let block = Block::new()
-            .title("[3]")
-            .title("Inspector")
-            .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
-            .border_style(Style::new().fg(Color::Gray))
-            .border_type(BorderType::Rounded);
-
-        block.render(area, buf);
+        self.block.clone().render(area, buf);
 
         let area = self.margins.split(area)[0];
 

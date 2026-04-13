@@ -2,13 +2,14 @@ use async_trait::async_trait;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect, Size},
-    style::{Color, Stylize},
-    widgets::{Block, ListState},
+    widgets::ListState,
 };
+use serde::{Deserialize, Serialize};
+use strum::{Display, EnumIter};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
-    tui::{Signal, components::Component},
+    tui::{Page, Signal, components::Component},
     types::KastenHandle,
 };
 
@@ -29,6 +30,17 @@ pub struct Todo<'text> {
     explorer: Option<Explorer<'text>>,
     task_list: Option<TaskList<'text>>,
     inspector: Option<Inspector<'text>>,
+}
+
+/// The different regions inside the `Todo` component
+#[derive(
+    Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, Display,
+)]
+pub enum TodoRegion {
+    Inspector,
+    TaskList,
+    #[default]
+    Explorer,
 }
 
 impl Todo<'_> {
@@ -121,7 +133,8 @@ impl Component for Todo<'_> {
     }
 
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
-        let _explorer = self
+
+        let explorer = self
             .explorer
             .as_mut()
             .expect("This should have already been initialized");
@@ -130,8 +143,31 @@ impl Component for Todo<'_> {
             .task_list
             .as_mut()
             .expect("This should have already been initialized");
+        let inspector = self
+            .inspector
+            .as_mut()
+            .expect("This should have already been initialized");
 
         match signal {
+            Signal::SwitchTo {
+                page: Page::Todo(region),
+            } => match region {
+                TodoRegion::Inspector => {
+                    inspector.set_active();
+                    explorer.set_inactive();
+                    task_list.set_inactive();
+                }
+                TodoRegion::TaskList => {
+                    inspector.set_inactive();
+                    explorer.set_inactive();
+                    task_list.set_active();
+                }
+                TodoRegion::Explorer => {
+                    explorer.set_active();
+                    task_list.set_inactive();
+                    inspector.set_inactive();
+                }
+            },
             Signal::MoveDown => {
                 // explorer.state.select_next();
                 task_list.state.select_next();
