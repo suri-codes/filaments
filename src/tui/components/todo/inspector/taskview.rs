@@ -9,7 +9,9 @@ use crate::types::Task;
 pub struct TaskView<'text> {
     name: Paragraph<'text>,
     priority: Paragraph<'text>,
+    #[expect(dead_code)]
     created_at: Paragraph<'text>,
+    #[expect(dead_code)]
     parent_group: Paragraph<'text>,
 
     due: Paragraph<'text>,
@@ -57,7 +59,7 @@ impl Widget for TaskView<'_> {
     where
         Self: Sized,
     {
-        let (name_rect, priority_rect, due_rect, content_rect) = {
+        let (name_rect, priority_rect, due_rect, _content_rect) = {
             let rects = self.layouts.left_content.split(area);
             let l_rects = self.layouts.name_priority_due.split(rects[0]);
 

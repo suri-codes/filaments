@@ -51,7 +51,7 @@ impl Widget for GroupView<'_> {
     where
         Self: Sized,
     {
-        let (name_rect, priority_rect, created_at, content_rect) = {
+        let (name_rect, priority_rect, created_at, _content_rect) = {
             let rects = self.layouts.left_content.split(area);
             let l_rects = self.layouts.name_priority_created_at.split(rects[0]);
 

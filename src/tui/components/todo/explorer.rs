@@ -41,6 +41,12 @@ impl Explorer<'_> {
             .tree
             .traverse_pre_order_ids(scope)
             .expect("This should not panic as the node id should exist inside")
+            .filter(|node| {
+                if *node == tree.root_id {
+                    return false;
+                }
+                true
+            })
             .collect::<Vec<_>>();
 
         Self {

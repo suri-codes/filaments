@@ -57,7 +57,7 @@ impl From<GroupModelEx> for Group {
             .tag
             .into_option()
             .expect(
-                "When fetching a Group from the database, we expect to always have the Zettel loaded!!",
+                "When fetching a Group from the database, we expect to always have the Tag loaded!!",
             )
             .into(),
         }

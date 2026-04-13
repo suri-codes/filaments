@@ -43,7 +43,6 @@ impl TaskList<'_> {
         )
         .style(Color::White)
         .highlight_style(Style::new().on_dark_gray());
-        // .highlight_symbol("> ");
 
         Self {
             render_list,

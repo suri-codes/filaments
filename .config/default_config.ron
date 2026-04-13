@@ -1,27 +1,47 @@
 (
     directory: "{INSERT_ROOT_HERE}",
     global_key_binds: {
-        "up": MoveUp,
-        "ctrl-c": Quit,
+        "up":     MoveUp,
+        "down":   MoveDown,
         "ctrl-z": Suspend,
-        "down": MoveDown,
+        "ctrl-c": Quit,
     },
     zk: (
         keybinds: {
-            "enter": OpenZettel,
-            "tab": SwitchTo(
-                page: Todo(Explorer),
-            ),
-            "<Ctrl-n>": NewZettel,
+            "tab": SwitchTo(page: Todo(Explorer)),
+            "ctrl-n": NewZettel,
+            "enter":  OpenZettel,
         },
     ),
     todo: (
-        keybinds: {
-            "k": MoveUp,
-            "j": MoveDown,
-            "tab": SwitchTo(
-                page: Zk,
-            ),
-        },
+        explorer: (
+            keybinds: {
+                "tab": SwitchTo(page: Zk),
+                "1": SwitchTo(page: Todo(Explorer)),
+                "2": SwitchTo(page: Todo(Inspector)),
+                "3": SwitchTo(page: Todo(TaskList)),
+                "j": MoveDown,
+                "k": MoveUp,
+            },
+        ),
+        inspector: (
+            keybinds: {
+                "tab": SwitchTo(page: Zk),
+                "1": SwitchTo(page: Todo(Explorer)),
+                "2": SwitchTo(page: Todo(Inspector)),
+                "3": SwitchTo(page: Todo(TaskList)),
+            },
+        ),
+        tasklist: (
+            keybinds: {
+                "tab": SwitchTo(page: Zk),
+                "1": SwitchTo(page: Todo(Explorer)),
+                "2": SwitchTo(page: Todo(Inspector)),
+                "3": SwitchTo(page: Todo(TaskList)),
+                "j": MoveDown,
+                "k": MoveUp,
+            },
+        ),
     ),
 )
+

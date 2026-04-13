@@ -204,20 +204,45 @@ mod test {
             "<Ctrl-n>": NewZettel,
             "enter": OpenZettel,
             "tab": SwitchTo (
-                        region: Todo
+                        page: Todo(Explorer)
                     ),
             
         },
     ),
     todo: (
+    inspector: (
         keybinds: {
             "j": MoveDown,
             "k": MoveUp,
             "tab": SwitchTo (
-                        region: Zk
+                        page: Zk
                     ),
                     
         },
+        
+    ),
+    tasklist: (
+        keybinds: {
+            "j": MoveDown,
+            "k": MoveUp,
+            "tab": SwitchTo (
+                        page: Zk
+                    ),
+                    
+        },
+        
+    ),
+    explorer: (
+        keybinds: {
+            "j": MoveDown,
+            "k": MoveUp,
+            "tab": SwitchTo (
+                        page: Zk
+                    ),
+                    
+        },
+        
+    ),
     ),
 )
         "#;

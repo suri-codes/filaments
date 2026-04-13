@@ -30,6 +30,8 @@ pub struct Todo<'text> {
     explorer: Option<Explorer<'text>>,
     task_list: Option<TaskList<'text>>,
     inspector: Option<Inspector<'text>>,
+
+    active: TodoRegion,
 }
 
 /// The different regions inside the `Todo` component
@@ -52,7 +54,49 @@ impl Todo<'_> {
             explorer: None,
             task_list: None,
             inspector: None,
+            active: TodoRegion::default(),
         }
+    }
+
+    async fn update_inspector_from_selection(&mut self) {
+        let explorer = self
+            .explorer
+            .as_mut()
+            .expect("This should have already been init.ialized");
+        let task_list = self
+            .task_list
+            .as_mut()
+            .expect("This should have already been initialized");
+        let inspector = self
+            .inspector
+            .as_mut()
+            .expect("This should have already been initialized");
+        let selected_node_id = match self.active {
+            TodoRegion::TaskList => {
+                let Some(idx) = task_list.state.selected() else {
+                    return;
+                };
+                task_list.id_list.get(idx)
+            }
+            TodoRegion::Explorer => {
+                let Some(idx) = explorer.state.selected() else {
+                    return;
+                };
+                explorer.id_list.get(idx)
+            }
+            TodoRegion::Inspector => return,
+        };
+
+        let Some(selected_node_id) = selected_node_id else {
+            return;
+        };
+        let tree = &self.kh.read().await.todo_tree.tree;
+
+        *inspector = tree
+            .get(selected_node_id)
+            .expect("Nodeid must be valid")
+            .data()
+            .into();
     }
 }
 
@@ -118,12 +162,11 @@ impl Component for Todo<'_> {
             )
             .expect("Node id must be valid");
 
-        let inspector = first.data().into();
+        let mut inspector: Inspector<'_> = first.data().into();
 
-        // explorer.set_active();
         explorer.set_inactive();
-        // task_list.set_inactive();
-        task_list.set_active();
+        inspector.set_inactive();
+        task_list.set_inactive();
 
         self.explorer = Some(explorer);
         self.task_list = Some(task_list);
@@ -133,11 +176,10 @@ impl Component for Todo<'_> {
     }
 
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
-
         let explorer = self
             .explorer
             .as_mut()
-            .expect("This should have already been initialized");
+            .expect("This should have already been init.ialized");
 
         let task_list = self
             .task_list
@@ -151,32 +193,56 @@ impl Component for Todo<'_> {
         match signal {
             Signal::SwitchTo {
                 page: Page::Todo(region),
-            } => match region {
-                TodoRegion::Inspector => {
-                    inspector.set_active();
-                    explorer.set_inactive();
-                    task_list.set_inactive();
+            } => {
+                self.active = region;
+                match region {
+                    TodoRegion::Inspector => {
+                        inspector.set_active();
+                        explorer.set_inactive();
+                        task_list.set_inactive();
+                    }
+                    TodoRegion::TaskList => {
+                        inspector.set_inactive();
+                        explorer.set_inactive();
+                        task_list.set_active();
+                    }
+                    TodoRegion::Explorer => {
+                        explorer.set_active();
+                        task_list.set_inactive();
+                        inspector.set_inactive();
+                    }
                 }
-                TodoRegion::TaskList => {
-                    inspector.set_inactive();
-                    explorer.set_inactive();
-                    task_list.set_active();
-                }
-                TodoRegion::Explorer => {
-                    explorer.set_active();
-                    task_list.set_inactive();
-                    inspector.set_inactive();
-                }
-            },
+
+                self.update_inspector_from_selection().await;
+            }
             Signal::MoveDown => {
-                // explorer.state.select_next();
-                task_list.state.select_next();
-                // self.update_views_from_zettel_list_selection().await?;
+                match self.active {
+                    TodoRegion::TaskList => {
+                        task_list.state.select_next();
+                    }
+                    TodoRegion::Explorer => {
+                        explorer.state.select_next();
+                    }
+                    TodoRegion::Inspector => {
+                        return Ok(None);
+                    }
+                }
+
+                self.update_inspector_from_selection().await;
             }
 
             Signal::MoveUp => {
-                // explorer.state.select_previous();
-                task_list.state.select_previous();
+                match self.active {
+                    TodoRegion::TaskList => {
+                        task_list.state.select_previous();
+                    }
+                    TodoRegion::Explorer => {
+                        explorer.state.select_previous();
+                    }
+                    TodoRegion::Inspector => return Ok(None),
+                }
+
+                self.update_inspector_from_selection().await;
             }
             _ => {}
         }
