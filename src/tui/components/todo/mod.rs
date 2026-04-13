@@ -14,8 +14,12 @@ use crate::{
 
 mod explorer;
 use explorer::Explorer;
+
 mod tasklist;
 use tasklist::TaskList;
+
+mod inspector;
+use inspector::Inspector;
 
 pub struct Todo<'text> {
     #[expect(dead_code)]
@@ -24,6 +28,7 @@ pub struct Todo<'text> {
     layouts: Layouts,
     explorer: Option<Explorer<'text>>,
     task_list: Option<TaskList<'text>>,
+    inspector: Option<Inspector<'text>>,
 }
 
 impl Todo<'_> {
@@ -34,6 +39,7 @@ impl Todo<'_> {
             signal_tx: None,
             explorer: None,
             task_list: None,
+            inspector: None,
         }
     }
 }
@@ -90,6 +96,18 @@ impl Component for Todo<'_> {
         let mut explorer = Explorer::new(tree, &tree.root_id, l_state, splits.explorer.width);
         let mut task_list = TaskList::new(tree, &tree.root_id, l_state, splits.task_list.width);
 
+        let first = tree
+            .tree
+            .get(
+                task_list
+                    .id_list
+                    .first()
+                    .unwrap_or_else(|| tree.tree.root_node_id().expect("Root node must exist")),
+            )
+            .expect("Node id must be valid");
+
+        let inspector = first.data().into();
+
         // explorer.set_active();
         explorer.set_inactive();
         // task_list.set_inactive();
@@ -97,6 +115,7 @@ impl Component for Todo<'_> {
 
         self.explorer = Some(explorer);
         self.task_list = Some(task_list);
+        self.inspector = Some(inspector);
 
         Ok(())
     }
@@ -140,7 +159,7 @@ impl Component for Todo<'_> {
             splits.task_list,
             &mut task_list.state,
         );
-        frame.render_widget(Block::new().bg(Color::Green), splits.inspector);
+        frame.render_widget(self.inspector.as_ref().unwrap(), splits.inspector);
         Ok(())
     }
 }

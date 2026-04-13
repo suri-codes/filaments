@@ -1,6 +1,6 @@
 use dto::{DateTime, GroupModelEx, NanoId};
 
-use crate::types::{Priority, Tag, Zettel};
+use crate::types::{Priority, Tag, Zettel, frontmatter};
 
 /// A `Group` which contains tasks!
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -21,6 +21,19 @@ pub struct Group {
 
     /// The `Tag` that is related to this `Group`
     pub tag: Tag,
+}
+
+impl Group {
+    pub fn created_at(&self) -> String {
+        self.created_at
+            .format(frontmatter::DATE_FMT_STR)
+            .to_string()
+    }
+    pub fn modified_at(&self) -> String {
+        self.modified_at
+            .format(frontmatter::DATE_FMT_STR)
+            .to_string()
+    }
 }
 
 impl From<GroupModelEx> for Group {
