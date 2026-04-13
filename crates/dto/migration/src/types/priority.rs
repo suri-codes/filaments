@@ -1,6 +1,6 @@
 use sea_orm::DeriveValueType;
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveValueType, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveValueType, Default, PartialOrd, Ord)]
 #[sea_orm(value_type = "String")]
 pub enum Priority {
     Asap,

@@ -13,6 +13,8 @@ pub use sea_orm::EntityTrait;
 pub use sea_orm::IntoActiveModel;
 pub use sea_orm::QueryFilter;
 pub use sea_orm::QueryOrder;
+pub use sea_orm::entity::compound::HasMany;
+pub use sea_orm::entity::compound::HasOne;
 
 /// Exporting this as a generic NanoId.
 pub use migration::types::NanoId;
@@ -20,7 +22,9 @@ pub use migration::types::NanoId;
 /// and add additional functionality to it.
 pub use migration::types::Priority as PriorityDTO;
 
+pub use sea_orm::entity::prelude::Date;
 pub use sea_orm::entity::prelude::DateTime;
+pub use sea_orm::entity::prelude::Time;
 
 /// Color type, exporting as DTO because I might
 /// want to newtype wrap this, might not have to, depending

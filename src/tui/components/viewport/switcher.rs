@@ -6,7 +6,7 @@ use ratatui::{
 };
 use strum::IntoEnumIterator;
 
-use crate::tui::app::Region;
+use crate::tui::app::Page;
 
 #[derive(Debug, Clone)]
 pub struct Switcher<'text> {
@@ -15,8 +15,8 @@ pub struct Switcher<'text> {
 }
 
 impl Switcher<'_> {
-    pub fn select_region(&mut self, region: Region) {
-        self.line = Region::iter()
+    pub fn select_region(&mut self, region: Page) {
+        self.line = Page::iter()
             .map(|r| {
                 Span::from(format!(" {r} ")).style({
                     if r == region {
@@ -45,7 +45,7 @@ impl Default for Layouts {
 
 impl Default for Switcher<'_> {
     fn default() -> Self {
-        let line = Region::iter()
+        let line = Page::iter()
             .map(|r| Span::from(format!(" {r} ")).style(Style::default().bg(Color::DarkGray)))
             .collect::<Line>();
 

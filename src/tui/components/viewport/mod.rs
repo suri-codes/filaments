@@ -11,7 +11,7 @@ use tracing::debug;
 use crate::{
     tui::{
         Signal,
-        app::Region,
+        app::Page,
         components::{Component, Todo, Zk},
     },
     types::KastenHandle,
@@ -23,9 +23,9 @@ pub struct Viewport<'text> {
     kh: KastenHandle,
     _layouts: Layouts,
     switcher: Switcher<'text>,
-    active_region: Region,
+    active_page: Page,
     zk: Zk<'text>,
-    todo: Todo,
+    todo: Todo<'text>,
 }
 
 mod switcher;
@@ -34,7 +34,7 @@ use switcher::Switcher;
 impl Viewport<'_> {
     pub async fn new(kh: KastenHandle) -> Result<Self> {
         let mut switcher = Switcher::default();
-        switcher.select_region(Region::default());
+        switcher.select_region(Page::default());
 
         Ok(Self {
             signal_tx: None,
@@ -42,7 +42,7 @@ impl Viewport<'_> {
             switcher,
             zk: Zk::new(kh.clone()).await?,
             todo: Todo::new(kh.clone()),
-            active_region: Region::default(),
+            active_page: Page::default(),
             kh,
         })
     }
@@ -63,10 +63,9 @@ impl Default for Layouts {
 #[async_trait]
 impl Component for Viewport<'_> {
     async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
-        match self.active_region {
-            Region::Zk => self.zk.init(area).await,
-            Region::Todo => self.todo.init(area).await,
-        }
+        self.zk.init(area).await?;
+        self.todo.init(area).await?;
+        Ok(())
     }
 
     fn register_signal_handler(&mut self, tx: UnboundedSender<Signal>) -> Result<()> {
@@ -78,22 +77,22 @@ impl Component for Viewport<'_> {
 
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
         // switch active region
-        if let Signal::SwitchTo { region } = signal {
-            self.active_region = region;
-            self.switcher.select_region(region);
-            debug!("active region switched to : {region}");
+        if let Signal::SwitchTo { page } = signal {
+            self.active_page = page;
+            self.switcher.select_region(page);
+            debug!("active page switched to : {page}");
         }
 
-        match self.active_region {
-            Region::Zk => self.zk.update(signal).await,
-            Region::Todo => self.todo.update(signal).await,
+        match self.active_page {
+            Page::Zk => self.zk.update(signal).await,
+            Page::Todo(_) => self.todo.update(signal).await,
         }
     }
 
     async fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
-        match self.active_region {
-            Region::Zk => self.zk.handle_key_event(key).await,
-            Region::Todo => self.todo.handle_key_event(key).await,
+        match self.active_page {
+            Page::Zk => self.zk.handle_key_event(key).await,
+            Page::Todo(_) => self.todo.handle_key_event(key).await,
         }
     }
 
@@ -103,13 +102,13 @@ impl Component for Viewport<'_> {
         //     let rects = self.layouts.main_switcher.split(area);
         //     (rects[0], rects[1])
         // };
+        //
 
-        match self.active_region {
-            Region::Zk => self.zk.draw(frame, area),
-            Region::Todo => self.todo.draw(frame, area),
+        match self.active_page {
+            Page::Zk => self.zk.draw(frame, area),
+            Page::Todo(_) => self.todo.draw(frame, area),
         }?;
 
-        // frame.render_widget(self.switcher.clone(), area);
         Ok(())
     }
 }

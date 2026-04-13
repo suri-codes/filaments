@@ -10,10 +10,11 @@ use crossterm::event::KeyEvent;
 
 use crate::{
     config::file::RonConfig,
-    tui::{Region, Signal},
+    tui::{Page, Signal, TodoRegion},
 };
+
 #[derive(Debug, Clone)]
-pub struct KeyMap(pub HashMap<Region, HashMap<Vec<KeyEvent>, Signal>>);
+pub struct KeyMap(pub HashMap<Page, HashMap<Vec<KeyEvent>, Signal>>);
 
 impl TryFrom<&RonConfig> for KeyMap {
     type Error = color_eyre::Report;
@@ -21,43 +22,45 @@ impl TryFrom<&RonConfig> for KeyMap {
     fn try_from(value: &RonConfig) -> Result<Self, Self::Error> {
         let mut binds = HashMap::new();
 
-        for region in Region::iter() {
-            let mut region_binds = HashMap::new();
+        let all_pages = std::iter::once(Page::Zk).chain(TodoRegion::iter().map(Page::Todo));
 
-            let mut parse_and_insert = |str: &str, bind: &Signal| -> Result<()> {
-                let key_seq = parse_key_sequence(str).map_err(|e| {
-                    eyre!(format!(
-                        "Failed to parse the following keybind as valid keybind: {e}"
-                    ))
-                })?;
-
-                region_binds.insert(key_seq, bind.clone());
-                Ok(())
-            };
-
-            // first thing we have to do is insert the global binds for this region
+        for page in all_pages {
+            let mut page_binds = HashMap::new();
 
             for (str, bind) in &value.global_key_binds {
-                parse_and_insert(str, bind)?;
+                parse_and_insert(str, bind, &mut page_binds)?;
             }
 
-            // now we insert the region specific binds
-            for (str, bind) in match region {
-                Region::Zk => value.zk.keybinds.iter(),
-                Region::Todo => value.todo.keybinds.iter(),
-            } {
-                parse_and_insert(str, bind)?;
+            let page_specific: &HashMap<String, Signal> = match &page {
+                Page::Zk => &value.zk.keybinds,
+                Page::Todo(TodoRegion::Inspector) => &value.todo.inspector.keybinds,
+                Page::Todo(TodoRegion::Explorer) => &value.todo.explorer.keybinds,
+                Page::Todo(TodoRegion::TaskList) => &value.todo.tasklist.keybinds,
+            };
+
+            for (str, bind) in page_specific {
+                parse_and_insert(str, bind, &mut page_binds)?;
             }
 
-            binds.insert(region, region_binds);
+            binds.insert(page, page_binds);
         }
 
         Ok(Self(binds))
     }
 }
+fn parse_and_insert(
+    str: &str,
+    bind: &Signal,
+    page_binds: &mut HashMap<Vec<KeyEvent>, Signal>,
+) -> Result<()> {
+    let key_seq = parse_key_sequence(str)
+        .map_err(|e| eyre!("Failed to parse the following keybind as valid keybind: {e}"))?;
+    page_binds.insert(key_seq, bind.clone());
+    Ok(())
+}
 
 impl Deref for KeyMap {
-    type Target = HashMap<Region, HashMap<Vec<KeyEvent>, Signal>>;
+    type Target = HashMap<Page, HashMap<Vec<KeyEvent>, Signal>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -182,7 +185,7 @@ mod test {
 
     use crate::{
         config::{file::RonConfig, keymap::KeyMap},
-        tui::{Region, Signal},
+        tui::{Page, Signal, TodoRegion},
     };
 
     #[test]
@@ -201,20 +204,45 @@ mod test {
             "<Ctrl-n>": NewZettel,
             "enter": OpenZettel,
             "tab": SwitchTo (
-                        region: Todo
+                        page: Todo(Explorer)
                     ),
             
         },
     ),
     todo: (
+    inspector: (
         keybinds: {
             "j": MoveDown,
             "k": MoveUp,
             "tab": SwitchTo (
-                        region: Zk
+                        page: Zk
                     ),
                     
         },
+        
+    ),
+    tasklist: (
+        keybinds: {
+            "j": MoveDown,
+            "k": MoveUp,
+            "tab": SwitchTo (
+                        page: Zk
+                    ),
+                    
+        },
+        
+    ),
+    explorer: (
+        keybinds: {
+            "j": MoveDown,
+            "k": MoveUp,
+            "tab": SwitchTo (
+                        page: Zk
+                    ),
+                    
+        },
+        
+    ),
     ),
 )
         "#;
@@ -223,7 +251,7 @@ mod test {
         let keymap: KeyMap = (&config).try_into().unwrap();
 
         let map = keymap
-            .get(&Region::Todo)
+            .get(&Page::Todo(TodoRegion::Inspector))
             .expect("Home region must exist in keymap");
 
         let signal = map
@@ -237,7 +265,7 @@ mod test {
         assert_eq!(*signal, Signal::Quit);
 
         let map = keymap
-            .get(&Region::Zk)
+            .get(&Page::Zk)
             .expect("Home region must exist in keymap");
 
         let signal = map

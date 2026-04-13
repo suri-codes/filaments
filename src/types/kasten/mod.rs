@@ -11,9 +11,16 @@ use tokio::{
 };
 use tracing::debug;
 
-use crate::types::{FrontMatter, Index, ZettelId, index::ZettelOnDisk};
+use crate::types::{FrontMatter, ZettelId};
 
-#[derive(Debug, Clone)]
+mod index;
+pub use index::Index;
+pub use index::ZettelOnDisk;
+mod todo_tree;
+
+pub use todo_tree::{TodoNode, TodoNodeKind, TodoTree};
+
+#[derive(Debug)]
 pub struct Kasten {
     /// Private field so it can only be instantiated from a `Path`
     _private: (),
@@ -21,6 +28,8 @@ pub struct Kasten {
     pub root: PathBuf,
 
     pub index: Index,
+
+    pub todo_tree: TodoTree,
 
     pub db: DatabaseConnection,
 }
@@ -54,11 +63,14 @@ impl Kasten {
         // run da migrations every time we connect, just in case
         Migrator::up(&conn, None).await?;
 
+        let todo_tree = TodoTree::construct(&conn).await?;
+
         Ok(Self {
             _private: (),
             db: conn,
             root,
             index,
+            todo_tree,
         })
     }
 

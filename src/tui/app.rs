@@ -6,13 +6,15 @@ use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 
 use crate::{
     config::Config,
     tui::{Event, Tui, components::Viewport},
     types::{KastenHandle, ZettelId},
 };
+
+pub use crate::tui::components::TodoRegion;
 
 use super::{components::Component, signal::Signal};
 
@@ -24,7 +26,7 @@ pub struct App {
     should_quit: bool,
     should_suspend: bool,
     #[allow(dead_code)]
-    region: Region,
+    page: Page,
     last_tick_key_events: Vec<KeyEvent>,
     kh: KastenHandle,
     signal_tx: UnboundedSender<Signal>,
@@ -38,10 +40,10 @@ pub struct App {
 #[derive(
     Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, Display,
 )]
-pub enum Region {
+pub enum Page {
     #[default]
     Zk,
-    Todo,
+    Todo(TodoRegion),
 }
 
 impl App {
@@ -62,7 +64,7 @@ impl App {
             should_quit: false,
             should_suspend: false,
             config: Config::parse()?,
-            region: Region::default(),
+            page: Page::default(),
             last_tick_key_events: Vec::new(),
             kh,
             signal_tx,
@@ -148,15 +150,17 @@ impl App {
 
         let signal_tx = self.signal_tx.clone();
 
-        let Some(region_keymap) = self.config.keymap.get(&self.region) else {
+        let Some(page_keymap) = self.config.keymap.get(&self.page) else {
             return Ok(());
         };
 
-        if let Some(signal) = region_keymap.get(&vec![key]) {
+        info!("page: {:#?}, page_keymap: {page_keymap:#?}", self.page);
+
+        if let Some(signal) = page_keymap.get(&vec![key]) {
             signal_tx.send(signal.clone())?;
         } else {
             self.last_tick_key_events.push(key);
-            if let Some(signal) = region_keymap.get(&self.last_tick_key_events) {
+            if let Some(signal) = page_keymap.get(&self.last_tick_key_events) {
                 debug!("Got signal: {signal:?}");
                 signal_tx.send(signal.clone())?;
             }
@@ -167,6 +171,7 @@ impl App {
 
     async fn handle_signals(&mut self, tui: &mut Tui) -> Result<()> {
         while let Ok(signal) = self.signal_rx.try_recv() {
+            // debug!("handling signal: {signal:?}");
             if signal != Signal::Tick && signal != Signal::Render {
                 debug!("handling signal: {signal:?}");
                 // we dont care if the receiver is dropped, its fine
@@ -226,8 +231,9 @@ impl App {
                     tui.enter()?;
                 }
 
-                Signal::SwitchTo { region } => {
-                    self.region = region;
+                Signal::SwitchTo { page } => {
+                    info!("Switched page to {page:#?}");
+                    self.page = page;
                 }
 
                 Signal::Suspend => self.should_suspend = true,

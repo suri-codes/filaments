@@ -1,7 +1,8 @@
 /// The tui app
 mod app;
 pub use app::App as TuiApp;
-pub use app::Region;
+pub use app::Page;
+pub use app::TodoRegion;
 
 /// Tui components
 mod components;

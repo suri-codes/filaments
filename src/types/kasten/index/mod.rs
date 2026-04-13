@@ -18,7 +18,7 @@ use crate::types::{FrontMatter, Link, ZettelId, frontmatter::Body};
 #[derive(Debug, Clone)]
 pub struct Index {
     pub(super) zods: HashMap<ZettelId, ZettelOnDisk>,
-    pub(super) outgoing_links: HashMap<ZettelId, Vec<Link>>,
+    pub outgoing_links: HashMap<ZettelId, Vec<Link>>,
     // pub(super) incoming_links: HashMap<ZettelId, Vec<Link>>,
 }
 
@@ -230,25 +230,25 @@ impl Index {
         Ok(())
     }
 
-    pub fn get_zod(&self, zid: &ZettelId) -> &ZettelOnDisk {
-        self.zods.get(zid).expect("Invariant broken. Any zid we lookup must exist in the index, otherwise the db is corrupt or not sync'd.")
-    }
-
-    fn get_zod_mut(&mut self, zid: &ZettelId) -> &mut ZettelOnDisk {
-        self.zods.get_mut(zid).expect("Invariant broken. Any zid we lookup must exist in the index, otherwise the db is corrupt or not sync'd.")
-    }
-
     pub fn get_links(&self, zid: &ZettelId) -> &Vec<Link> {
         self.outgoing_links
             .get(zid)
             .expect("Invariant broken. Any zid we look up exist inside this map")
     }
 
-    pub const fn zods(&self) -> &HashMap<ZettelId, ZettelOnDisk> {
-        &self.zods
-    }
-
     pub fn sync_with_db(&self, _db: &DatabaseConnection) {
         todo!()
+    }
+
+    pub fn get_zod(&self, zid: &ZettelId) -> &ZettelOnDisk {
+        self.zods.get(zid).expect("Invariant broken. Any zid we lookup must exist in the index, otherwise the db is corrupt or not sync'd.")
+    }
+
+    pub fn get_zod_mut(&mut self, zid: &ZettelId) -> &mut ZettelOnDisk {
+        self.zods.get_mut(zid).expect("Invariant broken. Any zid we lookup must exist in the index, otherwise the db is corrupt or not sync'd.")
+    }
+
+    pub const fn zods(&self) -> &HashMap<ZettelId, ZettelOnDisk> {
+        &self.zods
     }
 }

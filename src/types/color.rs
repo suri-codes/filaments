@@ -5,7 +5,7 @@ use ratatui::style::Color as RatColor;
 
 /// Agnostic Color type,
 /// internally represented as rgb
-#[derive(Debug, Copy, Clone, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy, Default)]
 pub struct Color(ColorDTO);
 
 impl Display for Color {

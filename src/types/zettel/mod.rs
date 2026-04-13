@@ -19,7 +19,8 @@ pub use id::ZettelId;
 /// A `Zettel` is a note about a single idea.
 /// It can have many `Tag`s, just meaning it can fall under many
 /// categories.
-#[derive(Debug, Clone)]
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Zettel {
     /// Should only be constructed from models.
     _private: (),
@@ -41,7 +42,7 @@ impl Zettel {
             .map(Into::into))
     }
 
-    pub async fn new(title: impl Into<String>, kt: &mut Kasten) -> Result<Self> {
+    pub async fn new(title: impl Into<String>, kt: &mut Kasten, tags: Vec<Tag>) -> Result<Self> {
         // fn new(title: impl Into<String>) -> Result<Self> {
         let title = title.into();
 
@@ -60,11 +61,22 @@ impl Zettel {
                 format!("Failed to create file at local file path: {local_file_path}")
             })?;
 
-        let inserted = ZettelActiveModel::builder()
-            .set_title(title.clone())
-            .set_nano_id(nano_id)
-            .insert(&kt.db)
-            .await?;
+        let inserted = {
+            let mut am = ZettelActiveModel::builder()
+                .set_title(title.clone())
+                .set_nano_id(nano_id);
+
+            for tag in tags {
+                let tag = TagEntity::load()
+                    .filter_by_nano_id(tag.id)
+                    .one(&kt.db)
+                    .await?
+                    .expect("Invariant broken, tag must exist");
+                am = am.add_tag(tag);
+            }
+
+            am.insert(&kt.db).await?
+        };
 
         // need to load tags...
         let zettel = ZettelEntity::load()

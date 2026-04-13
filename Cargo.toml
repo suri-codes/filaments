@@ -33,6 +33,7 @@ snafu = "0.9.0"
 serde = "1.0.228"
 tracing = "0.1.44"
 tokio = { version = "1.51.1", features = ["full"] }
+tree = {path = "crates/tree"}
 
 [package]
 name = "filaments"
@@ -83,6 +84,8 @@ nucleo-matcher = "0.3.1"
 ron = "0.12.1"
 tower-lsp = "0.20.0"
 notify = "8.2.0"
+tree = {workspace = true}
+async-recursion = "1.1.1"
 
 [build-dependencies]
 anyhow = "1.0.102"

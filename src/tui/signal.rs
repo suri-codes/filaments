@@ -6,7 +6,7 @@ use strum::Display;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    tui::Region,
+    tui::Page,
     types::{Link, ZettelId},
 };
 
@@ -24,7 +24,7 @@ pub enum Signal {
     Help,
 
     SwitchTo {
-        region: Region,
+        page: Page,
     },
 
     // movement
