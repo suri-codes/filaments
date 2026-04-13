@@ -1,6 +1,5 @@
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 
-use color_eyre::eyre::eyre;
 use strum::Display;
 
 use serde::{Deserialize, Serialize};
@@ -22,6 +21,10 @@ pub enum Signal {
     ClearScreen,
     Error(String),
     Help,
+
+    /// Request a refresh of the components being displayed due
+    /// to an update to the `Kasten`
+    Refresh,
 
     SwitchTo {
         page: Page,
@@ -53,29 +56,33 @@ pub enum Signal {
         zid: ZettelId,
     },
 
+    /// Create a new `Group`
+    NewGroup,
+
     /// this is fucking temporary
     Helix {
         path: PathBuf,
     },
 }
 
-impl FromStr for Signal {
-    type Err = color_eyre::Report;
+// impl FromStr for Signal {
+//     type Err = color_eyre::Report;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.to_lowercase().as_str() {
-            "suspend" => Self::Suspend,
-            "resume" => Self::Resume,
-            "quit" => Self::Quit,
-            "movedown" => Self::MoveDown,
-            "moveup" => Self::MoveUp,
-            "openzettel" => Self::OpenZettel,
-            "newzettel" => Self::NewZettel,
-            _ => {
-                return Err(eyre!(format!(
-                    "Attempt to construct a non-user Signal from str: {s}"
-                )));
-            }
-        })
-    }
-}
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         Ok(match s.to_lowercase().as_str() {
+//             "suspend" => Self::Suspend,
+//             "resume" => Self::Resume,
+//             "quit" => Self::Quit,
+//             "movedown" => Self::MoveDown,
+//             "moveup" => Self::MoveUp,
+//             "openzettel" => Self::OpenZettel,
+//             "newzettel" => Self::NewZettel,
+//             "newgroup"
+//             _ => {
+//                 return Err(eyre!(format!(
+//                     "Attempt to construct a non-user Signal from str: {s}"
+//                 )));
+//             }
+//         })
+//     }
+// }

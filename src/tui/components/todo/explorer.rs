@@ -3,7 +3,7 @@ use ratatui::{
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, List, ListState},
 };
-use tracing::info;
+use tracing::{debug, info};
 use tree::NodeId;
 
 use crate::types::{TodoNode, TodoNodeKind, TodoTree};
@@ -58,6 +58,7 @@ impl Explorer<'_> {
     }
 
     pub fn set_active(&mut self) {
+        debug!("Explorer set active!");
         self.render_list = self.render_list.clone().block(
             Block::new()
                 .title("[1]")
@@ -123,8 +124,6 @@ impl<'text> From<ExplorerListItem<'text>> for Text<'text> {
                 Style::default().bg(color),
             ));
         }
-
-        info!("{spans:#?}");
 
         Line::from(spans).into()
     }

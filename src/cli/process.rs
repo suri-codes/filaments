@@ -6,8 +6,8 @@ use std::{
 
 use color_eyre::eyre::{Context, Result, eyre};
 use dto::{
-    Date, DateTime, GroupActiveModel, GroupEntity, HasOne, IntoActiveModel, TagActiveModel,
-    TagEntity, TaskActiveModel, TaskEntity, Time, ZettelEntity,
+    Date, DateTime, GroupEntity, HasOne, IntoActiveModel, TagEntity, TaskActiveModel, TaskEntity,
+    Time, ZettelEntity,
 };
 use tower_lsp::{LspService, Server};
 
@@ -15,7 +15,7 @@ use crate::{
     cli::{Commands, ZettelSubcommand},
     config::{Config, get_config_dir},
     lsp::Backend,
-    types::{Group, Kasten, Priority, Tag, Task, Zettel},
+    types::{Group, Kasten, Priority, Task, Zettel},
 };
 
 impl Commands {
@@ -82,51 +82,7 @@ impl Commands {
                 match command {
                     super::TodoSubcommand::Group { name, parent_id } => {
                         // lets create a tag for this first group first
-                        let tag: Tag = TagActiveModel::builder()
-                            .set_name(name.clone())
-                            .insert(&kt.db)
-                            .await?
-                            .into();
-
-                        let tag_id = tag.id.clone();
-
-                        // then create the zettel for the group
-                        let zettel = Zettel::new(name.clone(), &mut kt, vec![tag]).await?;
-
-                        // then insert that shi
-                        let inserted = GroupActiveModel::builder()
-                            .set_name(name)
-                            .set_parent_group_id(parent_id)
-                            .set_tag(
-                                TagEntity::load()
-                                    .filter_by_nano_id(tag_id)
-                                    .one(&kt.db)
-                                    .await?
-                                    .expect("Tag must exist since we just created it")
-                                    .into_active_model(),
-                            )
-                            .set_zettel(
-                                ZettelEntity::load()
-                                    .filter_by_nano_id(zettel.id)
-                                    .one(&kt.db)
-                                    .await?
-                                    .expect("Zettel must exist since we just created it")
-                                    .into_active_model(),
-                            )
-                            .set_priority(Priority::default())
-                            .insert(&kt.db)
-                            .await?;
-
-                        // group should also have the accompanying tag for it.
-                        let group: Group = GroupEntity::load()
-                            .with(TagEntity)
-                            .with((ZettelEntity, TagEntity))
-                            .filter_by_nano_id(inserted.nano_id)
-                            .one(&kt.db)
-                            .await?
-                            .expect("We just inserted it")
-                            .into();
-
+                        let group = Group::new(name, parent_id, &mut kt).await?;
                         println!("created group {group:#?}");
                     }
                     super::TodoSubcommand::Task { name, parent_id } => {

@@ -64,7 +64,7 @@ fn main() -> color_eyre::Result<()> {
         move || -> color_eyre::Result<()> {
             // block the tui on the same runtime as above
             tui_rt.block_on(async {
-                let mut tui = TuiApp::new(args.tick_rate, args.frame_rate, kh, signal_tx).await?;
+                let mut tui = TuiApp::new(args.tick_rate, args.frame_rate, kh, signal_tx)?;
                 tui.run().await?;
                 // just close everything as soon as the tui is done running
                 process::exit(0);

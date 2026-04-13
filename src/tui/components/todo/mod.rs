@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use dto::NanoId;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect, Size},
@@ -7,15 +8,15 @@ use ratatui::{
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::{debug, info};
 
 use crate::{
     tui::{Page, Signal, components::Component},
-    types::KastenHandle,
+    types::{Group, KastenHandle},
 };
 
 mod explorer;
 use explorer::Explorer;
-
 mod tasklist;
 use tasklist::TaskList;
 
@@ -31,6 +32,7 @@ pub struct Todo<'text> {
     task_list: Option<TaskList<'text>>,
     inspector: Option<Inspector<'text>>,
 
+    area: Size,
     active: TodoRegion,
 }
 
@@ -54,8 +56,71 @@ impl Todo<'_> {
             explorer: None,
             task_list: None,
             inspector: None,
+            area: Size::default(),
             active: TodoRegion::default(),
         }
+    }
+
+    pub async fn refresh(&mut self) {
+        let explorer = self
+            .explorer
+            .as_mut()
+            .expect("This should have already been init.ialized");
+        let task_list = self
+            .task_list
+            .as_mut()
+            .expect("This should have already been initialized");
+
+        let explorer_selection = explorer
+            .state
+            .selected()
+            .and_then(|idx| explorer.id_list.get(idx));
+        let task_list_selection = task_list
+            .state
+            .selected()
+            .and_then(|idx| task_list.id_list.get(idx));
+        let kt = self.kh.read().await;
+        let tree = &kt.todo_tree;
+
+        let splits = self
+            .layouts
+            .split(Rect::new(0, 0, self.area.width, self.area.height));
+
+        let l_state = ListState::default();
+
+        //TODO: instead of tree.root_id this probably should be scope.
+        let mut explorer = Explorer::new(tree, &tree.root_id, l_state, splits.explorer.width);
+        let mut task_list = TaskList::new(tree, &tree.root_id, l_state, splits.task_list.width);
+
+        drop(kt);
+
+        let explorer_selection_idx =
+            explorer_selection.and_then(|id| explorer.id_list.iter().position(|e| id == e));
+
+        let task_list_selection_idx =
+            task_list_selection.and_then(|id| task_list.id_list.iter().position(|e| id == e));
+
+        explorer.state.select(explorer_selection_idx);
+        task_list.state.select(task_list_selection_idx);
+
+        match self.active {
+            TodoRegion::Inspector => {
+                explorer.set_inactive();
+                task_list.set_inactive();
+            }
+            TodoRegion::TaskList => {
+                explorer.set_inactive();
+                task_list.set_active();
+            }
+            TodoRegion::Explorer => {
+                explorer.set_active();
+                task_list.set_inactive();
+            }
+        }
+
+        self.explorer = Some(explorer);
+        self.task_list = Some(task_list);
+        self.update_inspector_from_selection().await;
     }
 
     async fn update_inspector_from_selection(&mut self) {
@@ -71,6 +136,7 @@ impl Todo<'_> {
             .inspector
             .as_mut()
             .expect("This should have already been initialized");
+
         let selected_node_id = match self.active {
             TodoRegion::TaskList => {
                 let Some(idx) = task_list.state.selected() else {
@@ -142,6 +208,7 @@ impl Layouts {
 #[async_trait]
 impl Component for Todo<'_> {
     async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
+        self.area = area;
         let tree = &self.kh.read().await.todo_tree;
         let splits = self.layouts.split(Rect::new(0, 0, area.width, area.height));
 
@@ -167,10 +234,15 @@ impl Component for Todo<'_> {
         explorer.set_inactive();
         inspector.set_inactive();
         task_list.set_inactive();
-
         self.explorer = Some(explorer);
         self.task_list = Some(task_list);
         self.inspector = Some(inspector);
+
+        // match self.active {
+
+        //     ins
+
+        // }
 
         Ok(())
     }
@@ -243,6 +315,22 @@ impl Component for Todo<'_> {
                 }
 
                 self.update_inspector_from_selection().await;
+            }
+
+            Signal::NewGroup => {
+                if self.active != TodoRegion::Explorer {
+                    return Ok(None);
+                }
+                debug!("Creating Group!");
+                let mut kt = self.kh.write().await;
+                let group = Group::new(NanoId::default().to_string(), None, &mut kt).await?;
+                drop(kt);
+                debug!("Created group: {group:#?}");
+                return Ok(Some(Signal::Refresh));
+            }
+
+            Signal::Refresh => {
+                self.refresh().await;
             }
             _ => {}
         }

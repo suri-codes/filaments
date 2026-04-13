@@ -22,6 +22,7 @@
                 "3": SwitchTo(page: Todo(TaskList)),
                 "j": MoveDown,
                 "k": MoveUp,
+                "g": NewGroup
             },
         ),
         inspector: (

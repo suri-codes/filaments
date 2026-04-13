@@ -48,7 +48,7 @@ pub enum Page {
 
 impl App {
     /// Construct a new `App` instance.
-    pub async fn new(
+    pub fn new(
         tick_rate: f64,
         frame_rate: f64,
         kh: KastenHandle,
@@ -60,7 +60,7 @@ impl App {
             tick_rate,
             frame_rate,
             // components: vec![Box::new(Zk::new(kh.clone()).await?)],
-            components: vec![Box::new(Viewport::new(kh.clone()).await?)],
+            components: vec![Box::new(Viewport::new(kh.clone()))],
             should_quit: false,
             should_suspend: false,
             config: Config::parse()?,
@@ -153,8 +153,6 @@ impl App {
         let Some(page_keymap) = self.config.keymap.get(&self.page) else {
             return Ok(());
         };
-
-        info!("page: {:#?}, page_keymap: {page_keymap:#?}", self.page);
 
         if let Some(signal) = page_keymap.get(&vec![key]) {
             signal_tx.send(signal.clone())?;

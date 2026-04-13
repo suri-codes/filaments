@@ -1,5 +1,5 @@
 use std::{
-    fs::{File, create_dir_all},
+    fs::{OpenOptions, create_dir_all},
     sync::LazyLock,
 };
 
@@ -29,7 +29,11 @@ pub fn init() -> Result<()> {
     create_dir_all(&directory)?;
 
     let log_path = directory.join(LOG_FILE.clone());
-    let log_file = File::create(log_path)?;
+
+    let log_file = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(log_path)?;
 
     let env_filter = EnvFilter::builder().with_default_directive(Level::INFO.into());
 
