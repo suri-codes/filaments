@@ -56,8 +56,14 @@ pub enum Signal {
         zid: ZettelId,
     },
 
-    /// Create a new `Group`
+    /// Create a new `Group` inside the currently selected group
+    NewSubGroup,
+
+    /// Create a new `Group` in the current scope
     NewGroup,
+
+    /// Create a new `Task`
+    NewTask,
 
     /// this is fucking temporary
     Helix {

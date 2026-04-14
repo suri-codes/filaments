@@ -8,7 +8,7 @@ use ratatui::{
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::{
     tui::{Page, Signal, components::Component},
@@ -317,7 +317,18 @@ impl Component for Todo<'_> {
                 self.update_inspector_from_selection().await;
             }
 
-            Signal::NewGroup => {
+            Signal::NewTask => {
+                if self.active != TodoRegion::Explorer {
+                    return Ok(None);
+                }
+
+                debug!("Creating Task!");
+                let _kt = self.kh.write().await;
+                todo!();
+                // let task = Task::new("wahoo", );
+            }
+
+            Signal::NewSubGroup => {
                 if self.active != TodoRegion::Explorer {
                     return Ok(None);
                 }

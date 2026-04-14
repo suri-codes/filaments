@@ -71,8 +71,6 @@ impl TodoTree {
         Ok(todo_tree)
     }
 
-    
-
     #[async_recursion::async_recursion]
     async fn add_group_to_tree(
         &mut self,

@@ -4,11 +4,7 @@ use std::{
     io::Write,
 };
 
-use color_eyre::eyre::{Context, Result, eyre};
-use dto::{
-    Date, DateTime, GroupEntity, HasOne, IntoActiveModel, TagEntity, TaskActiveModel, TaskEntity,
-    Time, ZettelEntity,
-};
+use color_eyre::eyre::{Context, Result};
 use tower_lsp::{LspService, Server};
 
 use crate::{
@@ -19,7 +15,6 @@ use crate::{
 };
 
 impl Commands {
-    #[expect(clippy::too_many_lines)]
     pub async fn process(self) -> Result<()> {
         match self {
             Self::Init { name } => {
@@ -86,63 +81,9 @@ impl Commands {
                         println!("created group {group:#?}");
                     }
                     super::TodoSubcommand::Task { name, parent_id } => {
-                        // need to create the task
-                        let parent = GroupEntity::load()
-                            .with(TagEntity)
-                            .filter_by_nano_id(parent_id)
-                            .one(&kt.db)
-                            .await
-                            .with_context(|| "failed to communicate with db")?
-                            .ok_or_else(|| eyre!("could not find the group"))?;
-
-                        let HasOne::Loaded(tag) = parent.tag else {
-                            panic!("this has to be loaded since we just loaded it right above")
-                        };
-
-                        let zettel =
-                            Zettel::new(name.clone(), &mut kt, vec![(*tag).into()]).await?;
-
-                        let inserted = TaskActiveModel::builder()
-                            .set_name(name)
-                            .set_group_id(parent.nano_id.clone())
-                            .set_priority(Priority::default())
-                            .set_zettel(
-                                ZettelEntity::load()
-                                    .filter_by_nano_id(zettel.id)
-                                    .one(&kt.db)
-                                    .await?
-                                    .expect("Zettel must exist since we just created it")
-                                    .into_active_model(),
-                            )
-                            .set_due(Some(DateTime::new(
-                                Date::from_ymd_opt(2026, 1, 31).unwrap(),
-                                Time::from_hms_opt(10, 10, 10).unwrap(),
-                            )))
-                            .insert(&kt.db)
-                            .await?;
-
-                        let group = GroupEntity::load()
-                            .with(TagEntity)
-                            .with((ZettelEntity, TagEntity))
-                            .filter_by_nano_id(parent.nano_id)
-                            .one(&kt.db)
-                            .await?
-                            .expect("We just inserted it");
-
-                        let mut task = TaskEntity::load()
-                            .with((ZettelEntity, TagEntity))
-                            .filter_by_nano_id(inserted.nano_id)
-                            .one(&kt.db)
-                            .await?
-                            .expect("We just inserted it");
-
-                        task.group = HasOne::Loaded(Box::new(group));
-
-                        println!("task: {task:#?}");
-
-                        let task: Task = task.into();
-
-                        println!("created task: {task:#?}");
+                        let task =
+                            Task::new(name, parent_id, &mut kt, None, Priority::default()).await?;
+                        println!("created task {task:#?}");
                     }
                 }
             }

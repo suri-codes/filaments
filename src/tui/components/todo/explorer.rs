@@ -3,7 +3,7 @@ use ratatui::{
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, List, ListState},
 };
-use tracing::{debug, info};
+use tracing::debug;
 use tree::NodeId;
 
 use crate::types::{TodoNode, TodoNodeKind, TodoTree};
