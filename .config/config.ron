@@ -25,6 +25,8 @@
                 "1": SwitchTo(
                     page: Todo(Explorer),
                 ),
+                "k": MoveUp,
+                "shift-g": NewSubGroup,
                 "tab": SwitchTo(
                     page: Zk,
                 ),
