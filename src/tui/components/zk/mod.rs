@@ -7,7 +7,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::info;
 
 use crate::{
-    tui::{Signal, components::Component},
+    tui::{Page, Signal, components::Component},
     types::{KastenHandle, Zettel},
 };
 
@@ -36,6 +36,8 @@ pub struct Zk<'text> {
     zettel_list: Option<ZettelList<'text>>,
     zettel_view: Option<ZettelView<'text>>,
     preview: Option<Preview<'text>>,
+
+    active: bool,
 }
 
 struct Layouts {
@@ -97,6 +99,8 @@ impl Zk<'_> {
             zettel_list: None,
             zettel_view: None,
             preview: None,
+
+            active: false,
         }
     }
 
@@ -308,17 +312,25 @@ impl Component for Zk<'_> {
         let zettel_list = self.zettel_list.as_mut().expect("Must be initialized");
         let search = self.search.as_mut().expect("Must be initialized");
         match signal {
+            Signal::SwitchTo { page } => {
+                self.active = page == Page::Zk;
+            }
+
             Signal::Refresh => {
                 self.refresh().await?;
             }
 
             Signal::MoveDown => {
-                zettel_list.state.select_next();
-                self.update_views_from_zettel_list_selection().await?;
+                if self.active {
+                    zettel_list.state.select_next();
+                    self.update_views_from_zettel_list_selection().await?;
+                }
             }
             Signal::MoveUp => {
-                zettel_list.state.select_previous();
-                self.update_views_from_zettel_list_selection().await?;
+                if self.active {
+                    zettel_list.state.select_previous();
+                    self.update_views_from_zettel_list_selection().await?;
+                }
             }
 
             Signal::OpenZettel => {

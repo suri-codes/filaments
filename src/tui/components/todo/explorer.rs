@@ -6,7 +6,7 @@ use ratatui::{
 use tracing::debug;
 use tree::NodeId;
 
-use crate::types::{TodoNode, TodoNodeKind, TodoTree};
+use crate::types::{Group, TodoNode, TodoNodeKind, TodoTree};
 
 pub struct Explorer<'text> {
     pub render_list: ratatui::widgets::List<'text>,
@@ -78,6 +78,36 @@ impl Explorer<'_> {
                 .border_style(Style::new().fg(Color::Gray))
                 .border_type(BorderType::Rounded),
         );
+    }
+
+    /// Returns the parent `Group` of the current selection in the `Explorer`
+    pub fn group_of_current_selection<'tree>(&self, tree: &'tree TodoTree) -> Option<&'tree Group> {
+        let selected = self.id_list.get(self.state.selected()?)?;
+
+        if let TodoNodeKind::Group(group) = &tree
+            .tree
+            .get(selected)
+            .expect("Invaraint Broken! This must be a valid id")
+            .data()
+            .kind
+        {
+            return Some(group);
+        }
+
+        let mut ancestors = tree.tree.ancestors(selected).expect("Must be a valid id");
+
+        ancestors
+            .next()
+            .and_then(|parent| match &parent.data().kind {
+                TodoNodeKind::Root => None,
+
+                TodoNodeKind::Task(_) => {
+                    panic!("Invariant broken! how is a task a parent?!")
+                }
+
+                TodoNodeKind::Group(group) => Some(group),
+            })
+            .map(|g| &**g)
     }
 }
 

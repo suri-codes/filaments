@@ -1,7 +1,7 @@
 use color_eyre::eyre::{Context, Result, eyre};
 use dto::{
-    Date, DateTime, GroupEntity, HasOne, IntoActiveModel as _, NanoId, TagEntity, TaskActiveModel,
-    TaskEntity, TaskModelEx, Time, ZettelEntity,
+    DateTime, GroupEntity, HasOne, IntoActiveModel as _, NanoId, TagEntity, TaskActiveModel,
+    TaskEntity, TaskModelEx, ZettelEntity,
 };
 
 use crate::types::{Group, Kasten, Priority, Zettel, frontmatter};

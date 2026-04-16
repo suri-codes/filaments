@@ -28,6 +28,7 @@ pub struct Todo<'text> {
     signal_tx: Option<UnboundedSender<Signal>>,
     kh: KastenHandle,
     layouts: Layouts,
+
     explorer: Option<Explorer<'text>>,
     task_list: Option<TaskList<'text>>,
     inspector: Option<Inspector<'text>>,
@@ -238,12 +239,6 @@ impl Component for Todo<'_> {
         self.task_list = Some(task_list);
         self.inspector = Some(inspector);
 
-        // match self.active {
-
-        //     ins
-
-        // }
-
         Ok(())
     }
 
@@ -322,13 +317,27 @@ impl Component for Todo<'_> {
                     return Ok(None);
                 }
 
-                debug!("Creating Task!");
-                let _kt = self.kh.write().await;
-                todo!();
-                // let task = Task::new("wahoo", );
+                todo!()
+
+                // let ancestors = kt.todo_tree.tree.ancestors(node_id) = todo!();
+                // let task = Task::new("wahoo");
             }
 
             Signal::NewSubGroup => {
+                if self.active != TodoRegion::Explorer {
+                    return Ok(None);
+                }
+                let mut kt = self.kh.write().await;
+                let parent = explorer
+                    .group_of_current_selection(&kt.todo_tree)
+                    .map(|parent| parent.id.clone());
+                let group = Group::new(NanoId::default().to_string(), parent, &mut kt).await?;
+                drop(kt);
+                debug!("Created group: {group:#?}");
+                return Ok(Some(Signal::Refresh));
+            }
+
+            Signal::NewGroup => {
                 if self.active != TodoRegion::Explorer {
                     return Ok(None);
                 }

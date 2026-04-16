@@ -65,6 +65,11 @@ impl Component for Viewport<'_> {
     async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
         self.zk.init(area).await?;
         self.todo.init(area).await?;
+
+        self.signal_tx.as_mut().unwrap().send(Signal::SwitchTo {
+            page: Page::default(),
+        })?;
+
         Ok(())
     }
 
