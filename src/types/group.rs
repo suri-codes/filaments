@@ -3,9 +3,8 @@ use dto::{
     DateTime, GroupActiveModel, GroupEntity, GroupModelEx, IntoActiveModel as _, NanoId,
     TagActiveModel, TagEntity, ZettelEntity,
 };
-use tree::Node;
 
-use crate::types::{Kasten, Priority, Tag, TodoNode, Zettel, frontmatter};
+use crate::types::{Kasten, Priority, Tag, Zettel, frontmatter};
 
 /// A `Group` which contains tasks!
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -91,42 +90,7 @@ impl Group {
             .expect("We just inserted it")
             .into();
 
-        // we should also insert the group into the kasten
-
-        let parent_node_id = group
-            .parent_id
-            .clone()
-            .and_then(|id| kt.todo_tree.nanoid_to_nodeid.get(&id))
-            .unwrap_or(&kt.todo_tree.root_id);
-
-        let my_depth = if *parent_node_id == kt.todo_tree.root_id {
-            0
-        } else {
-            kt.todo_tree
-                .tree
-                .get(parent_node_id)
-                .expect("Must exist inside tree")
-                .data()
-                .depth
-                + 1
-        };
-
-        let inserted_node_id = kt
-            .todo_tree
-            .tree
-            .insert(
-                Node::new(TodoNode::new(
-                    super::TodoNodeKind::Group(Box::new(group.clone())),
-                    my_depth,
-                )),
-                tree::InsertBehavior::UnderNode(parent_node_id),
-            )
-            .expect("Insertion of group should not error!");
-
-        kt.todo_tree
-            .nanoid_to_nodeid
-            .insert(group.id.clone(), inserted_node_id);
-
+        kt.todo_tree.insert_group(&group);
         Ok(group)
     }
 }

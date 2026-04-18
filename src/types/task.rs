@@ -64,10 +64,6 @@ impl Task {
                     .into_active_model(),
             )
             .set_due(due)
-            // .set_due(Some(DateTime::new(
-            //     Date::from_ymd_opt(2026, 1, 31).unwrap(),
-            //     Time::from_hms_opt(10, 10, 10).unwrap(),
-            // )))
             .insert(&kt.db)
             .await?;
 
@@ -79,20 +75,20 @@ impl Task {
             .await?
             .expect("We just inserted it");
 
-        let mut task = TaskEntity::load()
+        let mut task_am = TaskEntity::load()
             .with((ZettelEntity, TagEntity))
             .filter_by_nano_id(inserted.nano_id)
             .one(&kt.db)
             .await?
             .expect("We just inserted it");
 
-        task.group = HasOne::Loaded(Box::new(group));
+        task_am.group = HasOne::Loaded(Box::new(group));
 
-        println!("task: {task:#?}");
+        let task: Self = task_am.into();
 
-        // Ok(task.into())
+        kt.todo_tree.insert_task(&task);
 
-        todo!()
+        Ok(task)
     }
 
     pub fn due(&self) -> Option<String> {

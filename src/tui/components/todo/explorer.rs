@@ -8,6 +8,7 @@ use tree::NodeId;
 
 use crate::types::{Group, TodoNode, TodoNodeKind, TodoTree};
 
+#[derive(Debug)]
 pub struct Explorer<'text> {
     pub render_list: ratatui::widgets::List<'text>,
     #[allow(dead_code)]

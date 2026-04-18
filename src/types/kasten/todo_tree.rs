@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use color_eyre::eyre::{Context, Result};
 use dto::{
@@ -136,5 +136,102 @@ impl TodoTree {
         }
 
         Ok(())
+    }
+
+    pub fn insert_group(&mut self, group: &Group) {
+        let parent_node_id = group
+            .parent_id
+            .clone()
+            .and_then(|id| self.nanoid_to_nodeid.get(&id))
+            .unwrap_or(&self.root_id)
+            .clone();
+
+        let my_depth = if parent_node_id == self.root_id {
+            0
+        } else {
+            self.tree
+                .get(&parent_node_id)
+                .expect("Must exist inside tree")
+                .data()
+                .depth
+                + 1
+        };
+
+        let inserted_node_id = self
+            .tree
+            .insert(
+                Node::new(TodoNode::new(
+                    super::TodoNodeKind::Group(Box::new(group.clone())),
+                    my_depth,
+                )),
+                tree::InsertBehavior::UnderNode(&parent_node_id),
+            )
+            .expect("Insertion of group should not error!");
+
+        self.reorder_chidren(&parent_node_id);
+
+        self.nanoid_to_nodeid
+            .insert(group.id.clone(), inserted_node_id);
+    }
+
+    pub fn insert_task(&mut self, task: &Task) {
+        let parent_node_id = self
+            .nanoid_to_nodeid
+            .get(&task.group_id)
+            .expect("The group must already be in the lookup hashmap")
+            .clone();
+
+        let my_depth = self
+            .tree
+            .get(&parent_node_id)
+            .expect("Must exist inside tree")
+            .data()
+            .depth
+            + 1;
+
+        let inserted_node_id = self
+            .tree
+            .insert(
+                Node::new(TodoNode::new(
+                    super::TodoNodeKind::Task(Box::new(task.clone())),
+                    my_depth,
+                )),
+                tree::InsertBehavior::UnderNode(&parent_node_id),
+            )
+            .expect("Insertion of Task should not error!");
+
+        self.reorder_chidren(&parent_node_id);
+
+        self.nanoid_to_nodeid
+            .insert(task.id.clone(), inserted_node_id);
+    }
+
+    fn reorder_chidren(&mut self, parent_node_id: &NodeId) {
+        let children = self
+            .tree
+            .children(parent_node_id)
+            .expect("Must be valid")
+            .zip(
+                self.tree
+                    .children_ids(parent_node_id)
+                    .expect("Must be valid"),
+            )
+            .map(|(a, b)| (b.clone(), matches!(a.data().kind, TodoNodeKind::Task(_))))
+            .collect::<HashMap<_, _>>();
+
+        let parent = self
+            .tree
+            .get_mut(parent_node_id)
+            .expect("parent must exist");
+
+        parent.sort_children_by(|a, _| {
+            let a = children.get(a).expect("must exist");
+
+            if *a {
+                return Ordering::Less;
+            }
+
+            Ordering::Equal
+        });
     }
 }

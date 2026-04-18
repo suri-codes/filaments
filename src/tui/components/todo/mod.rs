@@ -12,7 +12,7 @@ use tracing::debug;
 
 use crate::{
     tui::{Page, Signal, components::Component},
-    types::{Group, KastenHandle},
+    types::{Group, KastenHandle, Priority, Task},
 };
 
 mod explorer;
@@ -83,6 +83,7 @@ impl Todo<'_> {
         let kt = self.kh.read().await;
         let tree = &kt.todo_tree;
 
+        debug!("tree after refresh {tree:#?}");
         let splits = self
             .layouts
             .split(Rect::new(0, 0, self.area.width, self.area.height));
@@ -92,6 +93,8 @@ impl Todo<'_> {
         //TODO: instead of tree.root_id this probably should be scope.
         let mut explorer = Explorer::new(tree, &tree.root_id, l_state, splits.explorer.width);
         let mut task_list = TaskList::new(tree, &tree.root_id, l_state, splits.task_list.width);
+
+        debug!("explorer constructed after refresh {explorer:#?}");
 
         drop(kt);
 
@@ -242,6 +245,7 @@ impl Component for Todo<'_> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
         let explorer = self
             .explorer
@@ -317,10 +321,26 @@ impl Component for Todo<'_> {
                     return Ok(None);
                 }
 
-                todo!()
+                let mut kt = self.kh.write().await;
+                let Some(parent) = explorer
+                    .group_of_current_selection(&kt.todo_tree)
+                    // .cloned()
+                    .map(|parent| parent.id.clone())
+                else {
+                    return Ok(None);
+                };
+                let task = Task::new(
+                    NanoId::default().to_string(),
+                    parent,
+                    &mut kt,
+                    None,
+                    Priority::default(),
+                )
+                .await?;
 
-                // let ancestors = kt.todo_tree.tree.ancestors(node_id) = todo!();
-                // let task = Task::new("wahoo");
+                drop(kt);
+                debug!("created task: {task:#?}");
+                return Ok(Some(Signal::Refresh));
             }
 
             Signal::NewSubGroup => {

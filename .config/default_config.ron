@@ -24,6 +24,7 @@
                 "k": MoveUp,
                 "shift-g": NewGroup,
                 "g": NewSubGroup,
+                "t": NewTask,
             },
         ),
         inspector: (

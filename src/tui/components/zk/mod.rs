@@ -320,17 +320,13 @@ impl Component for Zk<'_> {
                 self.refresh().await?;
             }
 
-            Signal::MoveDown => {
-                if self.active {
-                    zettel_list.state.select_next();
-                    self.update_views_from_zettel_list_selection().await?;
-                }
+            Signal::MoveDown if self.active => {
+                zettel_list.state.select_next();
+                self.update_views_from_zettel_list_selection().await?;
             }
-            Signal::MoveUp => {
-                if self.active {
-                    zettel_list.state.select_previous();
-                    self.update_views_from_zettel_list_selection().await?;
-                }
+            Signal::MoveUp if self.active => {
+                zettel_list.state.select_previous();
+                self.update_views_from_zettel_list_selection().await?;
             }
 
             Signal::OpenZettel => {
