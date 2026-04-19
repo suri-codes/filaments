@@ -15,7 +15,7 @@ use crate::{
         Signal,
         components::{Component, DEFAULT_NAME},
     },
-    types::{KastenHandle, TodoNode, TodoNodeKind},
+    types::{Group, KastenHandle, TodoNode, TodoNodeKind},
 };
 
 mod rootview;
@@ -238,7 +238,7 @@ impl Component for Inspector<'_> {
                         .clone()
                         .expect("Invariant Broken, this must be some id");
 
-                    let kt = self.kh.read().await;
+                    let mut kt = self.kh.write().await;
                     match &self.render_data {
                         RenderData::Task { .. } => {
                             let _ = TaskEntity::load()
@@ -252,29 +252,7 @@ impl Component for Inspector<'_> {
                                 .await?;
                         }
                         RenderData::Group { .. } => {
-                            let g = GroupEntity::load()
-                                .filter_by_nano_id(id.clone())
-                                .with(TagEntity)
-                                .one(&kt.db)
-                                .await?
-                                .expect("Invariant Broken: Must exist");
-                            let tag_id = g.tag.as_ref().expect("Must be loaded").nano_id.clone();
-
-                            let _ = g
-                                .into_active_model()
-                                .set_name(new_name.as_str())
-                                .save(&kt.db)
-                                .await?;
-
-                            TagEntity::load()
-                                .filter_by_nano_id(tag_id)
-                                .one(&kt.db)
-                                .await?
-                                .expect("Invariant Broken: Must exist")
-                                .into_active_model()
-                                .set_name(new_name.as_str())
-                                .save(&kt.db)
-                                .await?;
+                            Group::alter_name(id.clone(), new_name, &mut kt).await?;
                         }
                         RenderData::Root { .. } => unreachable!("Already returned above"),
                     }
