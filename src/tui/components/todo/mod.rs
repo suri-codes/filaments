@@ -261,7 +261,7 @@ impl Component for Todo<'_> {
         Ok(())
     }
 
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines)]
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
         let explorer = self
             .explorer

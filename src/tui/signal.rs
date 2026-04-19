@@ -91,25 +91,3 @@ pub enum Signal {
         nanoid: NanoId,
     },
 }
-
-// impl FromStr for Signal {
-//     type Err = color_eyre::Report;
-
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         Ok(match s.to_lowercase().as_str() {
-//             "suspend" => Self::Suspend,
-//             "resume" => Self::Resume,
-//             "quit" => Self::Quit,
-//             "movedown" => Self::MoveDown,
-//             "moveup" => Self::MoveUp,
-//             "openzettel" => Self::OpenZettel,
-//             "newzettel" => Self::NewZettel,
-//             "newgroup"
-//             _ => {
-//                 return Err(eyre!(format!(
-//                     "Attempt to construct a non-user Signal from str: {s}"
-//                 )));
-//             }
-//         })
-//     }
-// }

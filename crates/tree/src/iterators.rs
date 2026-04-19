@@ -14,7 +14,7 @@ pub struct Children<'a, T: 'a> {
 
 impl<'a, T> Children<'a, T> {
     // we actually want to
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub(crate) fn new(tree: &'a Tree<T>, node_id: &NodeId) -> Children<'a, T> {
         Children {
             tree,
@@ -60,7 +60,7 @@ pub struct ChildrenIds<'a> {
 }
 
 impl<'a> ChildrenIds<'a> {
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub(crate) fn new<T>(tree: &'a Tree<T>, node_id: &NodeId) -> ChildrenIds<'a> {
         ChildrenIds {
             child_ids: tree
@@ -95,7 +95,7 @@ pub struct Ancestors<'a, T: 'a> {
 }
 
 impl<'a, T> Ancestors<'a, T> {
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub(crate) const fn new(tree: &'a Tree<T>, node_id: NodeId) -> Ancestors<'a, T> {
         Ancestors {
             tree,
@@ -137,7 +137,7 @@ pub struct AncestorsIds<'a, T: 'a> {
 }
 
 impl<'a, T> AncestorsIds<'a, T> {
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub(crate) const fn new(tree: &'a Tree<T>, node_id: NodeId) -> AncestorsIds<'a, T> {
         AncestorsIds {
             tree,
@@ -179,7 +179,7 @@ pub struct PreOrderTraversal<'a, T: 'a> {
 }
 
 impl<'a, T> PreOrderTraversal<'a, T> {
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversal<'a, T> {
         let mut data = VecDeque::with_capacity(tree.capacity());
         data.push_front(node_id);
@@ -223,7 +223,7 @@ pub struct PreOrderTraversalIds<'a, T: 'a> {
 }
 
 impl<'a, T> PreOrderTraversalIds<'a, T> {
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversalIds<'a, T> {
         // Over allocating, but all at once instead of resizing and reallocating as we go.
         let mut data = VecDeque::with_capacity(tree.capacity());

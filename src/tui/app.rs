@@ -25,7 +25,6 @@ pub struct App {
     components: Vec<Box<dyn Component>>,
     should_quit: bool,
     should_suspend: bool,
-    #[allow(dead_code)]
     page: Page,
     last_tick_key_events: Vec<KeyEvent>,
     kh: KastenHandle,

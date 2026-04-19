@@ -31,7 +31,7 @@ impl<T> Node<T> {
     /// let _one: Node<i32> = Node::new(1);
     /// ```
     ///
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub const fn new(data: T) -> Node<T> {
         Self {
             parent: None,

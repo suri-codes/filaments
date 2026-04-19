@@ -164,7 +164,6 @@ impl Zk<'_> {
         self.zettel_list = Some(zettel_list);
 
         Ok(())
-        // what the fuck am i supposed to do here mannnn.
     }
 
     async fn update_views_from_zettel_list_selection(&mut self) -> Result<()> {

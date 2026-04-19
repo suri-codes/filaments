@@ -91,7 +91,6 @@ impl eframe::App for FilViz {
         if let Ok(signal) = self.signal_rx.try_recv() {
             debug!("received signal in filaments: {signal}");
 
-            #[allow(clippy::single_match)]
             match signal {
                 Signal::CreatedZettel { zid } => {
                     block_on(async {

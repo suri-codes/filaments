@@ -11,10 +11,9 @@ use crate::types::{Group, TodoNode, TodoNodeKind, TodoTree};
 #[derive(Debug)]
 pub struct Explorer<'text> {
     pub render_list: ratatui::widgets::List<'text>,
-    #[allow(dead_code)]
     pub id_list: Vec<NodeId>,
     pub state: ListState,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub width: u16,
 }
 

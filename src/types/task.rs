@@ -26,8 +26,6 @@ pub struct Task {
 }
 
 impl Task {
-    #[allow(clippy::unused_async)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
     pub async fn new(
         name: impl Into<String>,
         parent_id: NanoId,

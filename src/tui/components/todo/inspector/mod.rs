@@ -149,7 +149,6 @@ impl Component for Inspector<'_> {
         Ok(())
     }
 
-    #[allow(clippy::too_many_lines)]
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
         match signal {
             Signal::EditName => {
@@ -205,7 +204,6 @@ impl Component for Inspector<'_> {
         Ok(None)
     }
 
-    #[allow(clippy::too_many_lines)]
     async fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
         let signal_tx = self
             .signal_tx
