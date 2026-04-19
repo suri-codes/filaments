@@ -48,6 +48,7 @@
                 "p": EditPriority,
                 "n": EditName,
                 "d": EditDue,
+                "o": OpenZettel,
                 "3": SwitchTo(
                     page: Todo(TaskList),
                 ),

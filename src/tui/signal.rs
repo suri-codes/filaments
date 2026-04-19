@@ -51,6 +51,7 @@ pub enum Signal {
 
     /// User asks to open a `Zettel`
     OpenZettel,
+
     /// The user is done editing a `Zettel`
     ClosedZettel {
         /// the id of the `Zettel` that was closed

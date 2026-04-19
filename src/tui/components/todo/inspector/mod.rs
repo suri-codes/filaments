@@ -258,6 +258,26 @@ impl Component for Inspector<'_> {
                 self.refresh().await;
             }
 
+            Signal::OpenZettel if self.is_active => {
+                let Some(ref curr) = self.inspecting else {
+                    return Ok(None);
+                };
+
+                let kt = self.kh.read().await;
+
+                let node = kt.todo_tree.get_node_by_nano_id(curr).data();
+
+                let zid = match &node.kind {
+                    TodoNodeKind::Root => return Ok(None),
+                    TodoNodeKind::Group(group) => &group.zettel.id,
+                    TodoNodeKind::Task(task) => &task.zettel.id,
+                };
+
+                let path = kt.index.get_zod(zid).path.clone();
+                drop(kt);
+                return Ok(Some(Signal::Helix { path }));
+            }
+
             _ => {}
         }
         Ok(None)

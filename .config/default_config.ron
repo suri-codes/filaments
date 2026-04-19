@@ -36,7 +36,8 @@
                 "3": SwitchTo(page: Todo(TaskList)),
                 "n": EditName,
                 "p": EditPriority,
-                "d": EditDue
+                "d": EditDue,
+                "o": OpenZettel
             },
         ),
         tasklist: (
