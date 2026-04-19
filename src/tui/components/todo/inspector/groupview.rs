@@ -1,14 +1,16 @@
 use ratatui::{
     layout::{Constraint, Layout},
-    widgets::{Paragraph, Widget},
+    style::Style,
+    widgets::{Block, Paragraph, Widget},
 };
+use ratatui_textarea::TextArea;
 
 use crate::types::Group;
 
 #[derive(Debug, Clone)]
 pub struct GroupView<'text> {
-    name: Paragraph<'text>,
-    priority: Paragraph<'text>,
+    pub name: TextArea<'text>,
+    pub priority: TextArea<'text>,
     created_at: Paragraph<'text>,
     layouts: Layouts,
 }
@@ -23,13 +25,14 @@ impl Default for Layouts {
     fn default() -> Self {
         Self {
             left_content: Layout::horizontal(vec![
-                Constraint::Percentage(50),
+                Constraint::Percentage(30),
                 Constraint::Fill(100),
             ]),
             name_priority_created_at: Layout::vertical(vec![
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
+                Constraint::Min(3),
+                Constraint::Min(3),
+                Constraint::Min(3),
+                Constraint::Min(3),
             ]),
         }
     }
@@ -37,10 +40,21 @@ impl Default for Layouts {
 
 impl From<&Group> for GroupView<'_> {
     fn from(value: &Group) -> Self {
+        let mut name = TextArea::new(vec![value.name.clone()]);
+        name.set_block(Block::bordered().title("[N]ame"));
+        name.set_cursor_style(Style::reset());
+        name.set_cursor_line_style(Style::reset());
+
+        let mut priority = TextArea::new(vec![value.priority.to_string()]);
+        priority.set_block(Block::bordered().title("[P]riority"));
+        priority.set_cursor_style(Style::reset());
+        priority.set_cursor_line_style(Style::reset());
+
         Self {
-            name: Paragraph::new(value.name.clone()),
-            priority: Paragraph::new(value.priority.to_string()),
-            created_at: Paragraph::new(value.created_at()),
+            name,
+            priority,
+            created_at: Paragraph::new(value.created_at())
+                .block(Block::bordered().title("Created At")),
             layouts: Layouts::default(),
         }
     }

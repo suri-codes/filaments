@@ -22,7 +22,7 @@ impl TaskList<'_> {
         let render_list = List::new(
             tree.tree
                 .traverse_pre_order(scope)
-                .expect("nthis should not panic as the node id should exist inside")
+                .expect("This should not panic as the node id should exist inside")
                 .zip(
                     tree.tree
                         .traverse_pre_order_ids(scope)

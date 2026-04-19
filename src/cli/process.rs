@@ -4,22 +4,17 @@ use std::{
     io::Write,
 };
 
-use color_eyre::eyre::{Context, Result, eyre};
-use dto::{
-    Date, DateTime, GroupActiveModel, GroupEntity, HasOne, IntoActiveModel, TagActiveModel,
-    TagEntity, TaskActiveModel, TaskEntity, Time, ZettelEntity,
-};
+use color_eyre::eyre::{Context, Result};
 use tower_lsp::{LspService, Server};
 
 use crate::{
     cli::{Commands, ZettelSubcommand},
     config::{Config, get_config_dir},
     lsp::Backend,
-    types::{Group, Kasten, Priority, Tag, Task, Zettel},
+    types::{Group, Kasten, Priority, Task, Zettel},
 };
 
 impl Commands {
-    #[expect(clippy::too_many_lines)]
     pub async fn process(self) -> Result<()> {
         match self {
             Self::Init { name } => {
@@ -82,111 +77,13 @@ impl Commands {
                 match command {
                     super::TodoSubcommand::Group { name, parent_id } => {
                         // lets create a tag for this first group first
-                        let tag: Tag = TagActiveModel::builder()
-                            .set_name(name.clone())
-                            .insert(&kt.db)
-                            .await?
-                            .into();
-
-                        let tag_id = tag.id.clone();
-
-                        // then create the zettel for the group
-                        let zettel = Zettel::new(name.clone(), &mut kt, vec![tag]).await?;
-
-                        // then insert that shi
-                        let inserted = GroupActiveModel::builder()
-                            .set_name(name)
-                            .set_parent_group_id(parent_id)
-                            .set_tag(
-                                TagEntity::load()
-                                    .filter_by_nano_id(tag_id)
-                                    .one(&kt.db)
-                                    .await?
-                                    .expect("Tag must exist since we just created it")
-                                    .into_active_model(),
-                            )
-                            .set_zettel(
-                                ZettelEntity::load()
-                                    .filter_by_nano_id(zettel.id)
-                                    .one(&kt.db)
-                                    .await?
-                                    .expect("Zettel must exist since we just created it")
-                                    .into_active_model(),
-                            )
-                            .set_priority(Priority::default())
-                            .insert(&kt.db)
-                            .await?;
-
-                        // group should also have the accompanying tag for it.
-                        let group: Group = GroupEntity::load()
-                            .with(TagEntity)
-                            .with((ZettelEntity, TagEntity))
-                            .filter_by_nano_id(inserted.nano_id)
-                            .one(&kt.db)
-                            .await?
-                            .expect("We just inserted it")
-                            .into();
-
+                        let group = Group::new(name, parent_id, &mut kt).await?;
                         println!("created group {group:#?}");
                     }
                     super::TodoSubcommand::Task { name, parent_id } => {
-                        // need to create the task
-                        let parent = GroupEntity::load()
-                            .with(TagEntity)
-                            .filter_by_nano_id(parent_id)
-                            .one(&kt.db)
-                            .await
-                            .with_context(|| "failed to communicate with db")?
-                            .ok_or_else(|| eyre!("could not find the group"))?;
-
-                        let HasOne::Loaded(tag) = parent.tag else {
-                            panic!("this has to be loaded since we just loaded it right above")
-                        };
-
-                        let zettel =
-                            Zettel::new(name.clone(), &mut kt, vec![(*tag).into()]).await?;
-
-                        let inserted = TaskActiveModel::builder()
-                            .set_name(name)
-                            .set_group_id(parent.nano_id.clone())
-                            .set_priority(Priority::default())
-                            .set_zettel(
-                                ZettelEntity::load()
-                                    .filter_by_nano_id(zettel.id)
-                                    .one(&kt.db)
-                                    .await?
-                                    .expect("Zettel must exist since we just created it")
-                                    .into_active_model(),
-                            )
-                            .set_due(Some(DateTime::new(
-                                Date::from_ymd_opt(2026, 1, 31).unwrap(),
-                                Time::from_hms_opt(10, 10, 10).unwrap(),
-                            )))
-                            .insert(&kt.db)
-                            .await?;
-
-                        let group = GroupEntity::load()
-                            .with(TagEntity)
-                            .with((ZettelEntity, TagEntity))
-                            .filter_by_nano_id(parent.nano_id)
-                            .one(&kt.db)
-                            .await?
-                            .expect("We just inserted it");
-
-                        let mut task = TaskEntity::load()
-                            .with((ZettelEntity, TagEntity))
-                            .filter_by_nano_id(inserted.nano_id)
-                            .one(&kt.db)
-                            .await?
-                            .expect("We just inserted it");
-
-                        task.group = HasOne::Loaded(Box::new(group));
-
-                        println!("task: {task:#?}");
-
-                        let task: Task = task.into();
-
-                        println!("created task: {task:#?}");
+                        let task =
+                            Task::new(name, parent_id, &mut kt, None, Priority::default()).await?;
+                        println!("created task {task:#?}");
                     }
                 }
             }

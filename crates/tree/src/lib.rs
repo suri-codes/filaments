@@ -39,7 +39,7 @@ pub struct NodeId {
 
 impl NodeId {
     // This is okay since we are practically never reaching 2^32.
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation)]
     pub(crate) const fn new(index: usize) -> Self {
         Self {
             index: index as u32,

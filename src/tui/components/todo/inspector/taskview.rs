@@ -1,41 +1,39 @@
 use ratatui::{
     layout::{Constraint, Layout},
-    widgets::{Paragraph, Widget},
+    style::Style,
+    widgets::{Block, Paragraph, Widget},
 };
+use ratatui_textarea::TextArea;
 
 use crate::types::Task;
 
 #[derive(Debug, Clone)]
 pub struct TaskView<'text> {
-    name: Paragraph<'text>,
-    priority: Paragraph<'text>,
-    #[expect(dead_code)]
-    created_at: Paragraph<'text>,
-    #[expect(dead_code)]
+    pub name: TextArea<'text>,
+    pub priority: TextArea<'text>,
     parent_group: Paragraph<'text>,
-
-    due: Paragraph<'text>,
-
+    due_finished_at: Paragraph<'text>,
     layouts: Layouts,
 }
 
 #[derive(Debug, Clone)]
 struct Layouts {
     left_content: Layout,
-    name_priority_due: Layout,
+    name_priority_due_group: Layout,
 }
 
 impl Default for Layouts {
     fn default() -> Self {
         Self {
             left_content: Layout::horizontal(vec![
-                Constraint::Percentage(50),
+                Constraint::Percentage(30),
                 Constraint::Fill(100),
             ]),
-            name_priority_due: Layout::vertical(vec![
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
+            name_priority_due_group: Layout::vertical(vec![
+                Constraint::Min(3),
+                Constraint::Min(3),
+                Constraint::Min(3),
+                Constraint::Min(3),
             ]),
         }
     }
@@ -43,12 +41,34 @@ impl Default for Layouts {
 
 impl From<&Task> for TaskView<'_> {
     fn from(value: &Task) -> Self {
+        let mut name = TextArea::new(vec![value.name.clone()]);
+        name.set_block(Block::bordered().title("[N]ame"));
+        name.set_cursor_style(Style::reset());
+        name.set_cursor_line_style(Style::reset());
+
+        let mut priority = TextArea::new(vec![value.priority.to_string()]);
+        priority.set_block(Block::bordered().title("[P]riority"));
+        priority.set_cursor_style(Style::reset());
+        priority.set_cursor_line_style(Style::reset());
+
+        let due_finished_at = {
+            value.finished_at().map_or_else(
+                || {
+                    value.due().map_or_else(
+                        || Paragraph::new("None").block(Block::bordered().title("Due")),
+                        |due| Paragraph::new(due).block(Block::bordered().title("Due")),
+                    )
+                },
+                |finished| Paragraph::new(finished).block(Block::bordered().title("Finished At")),
+            )
+        };
+
         Self {
-            name: Paragraph::new(value.name.clone()),
-            priority: Paragraph::new(value.priority.to_string()),
-            created_at: Paragraph::new(value.created_at()),
-            parent_group: Paragraph::new(value.group.name.clone()),
-            due: Paragraph::new(value.due().unwrap_or_else(|| "None".to_owned())),
+            name,
+            priority,
+            due_finished_at,
+            parent_group: Paragraph::new(value.group.name.clone())
+                .block(Block::bordered().title("Group")),
             layouts: Layouts::default(),
         }
     }
@@ -59,15 +79,16 @@ impl Widget for TaskView<'_> {
     where
         Self: Sized,
     {
-        let (name_rect, priority_rect, due_rect, _content_rect) = {
+        let (name_rect, priority_rect, due_rect, group_rect, _content_rect) = {
             let rects = self.layouts.left_content.split(area);
-            let l_rects = self.layouts.name_priority_due.split(rects[0]);
+            let l_rects = self.layouts.name_priority_due_group.split(rects[0]);
 
-            (l_rects[0], l_rects[1], l_rects[2], rects[1])
+            (l_rects[0], l_rects[1], l_rects[2], l_rects[3], rects[1])
         };
 
         self.name.render(name_rect, buf);
         self.priority.render(priority_rect, buf);
-        self.due.render(due_rect, buf);
+        self.due_finished_at.render(due_rect, buf);
+        self.parent_group.render(group_rect, buf);
     }
 }

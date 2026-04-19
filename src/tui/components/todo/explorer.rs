@@ -3,17 +3,17 @@ use ratatui::{
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, List, ListState},
 };
-use tracing::info;
+use tracing::debug;
 use tree::NodeId;
 
-use crate::types::{TodoNode, TodoNodeKind, TodoTree};
+use crate::types::{Group, TodoNode, TodoNodeKind, TodoTree};
 
+#[derive(Debug)]
 pub struct Explorer<'text> {
     pub render_list: ratatui::widgets::List<'text>,
-    #[allow(dead_code)]
     pub id_list: Vec<NodeId>,
     pub state: ListState,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub width: u16,
 }
 
@@ -58,6 +58,7 @@ impl Explorer<'_> {
     }
 
     pub fn set_active(&mut self) {
+        debug!("Explorer set active!");
         self.render_list = self.render_list.clone().block(
             Block::new()
                 .title("[1]")
@@ -77,6 +78,36 @@ impl Explorer<'_> {
                 .border_style(Style::new().fg(Color::Gray))
                 .border_type(BorderType::Rounded),
         );
+    }
+
+    /// Returns the parent `Group` of the current selection in the `Explorer`
+    pub fn group_of_current_selection<'tree>(&self, tree: &'tree TodoTree) -> Option<&'tree Group> {
+        let selected = self.id_list.get(self.state.selected()?)?;
+
+        if let TodoNodeKind::Group(group) = &tree
+            .tree
+            .get(selected)
+            .expect("Invaraint Broken! This must be a valid id")
+            .data()
+            .kind
+        {
+            return Some(group);
+        }
+
+        let mut ancestors = tree.tree.ancestors(selected).expect("Must be a valid id");
+
+        ancestors
+            .next()
+            .and_then(|parent| match &parent.data().kind {
+                TodoNodeKind::Root => None,
+
+                TodoNodeKind::Task(_) => {
+                    panic!("Invariant broken! how is a task a parent?!")
+                }
+
+                TodoNodeKind::Group(group) => Some(group),
+            })
+            .map(|g| &**g)
     }
 }
 
@@ -123,8 +154,6 @@ impl<'text> From<ExplorerListItem<'text>> for Text<'text> {
                 Style::default().bg(color),
             ));
         }
-
-        info!("{spans:#?}");
 
         Line::from(spans).into()
     }

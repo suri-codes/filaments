@@ -25,30 +25,33 @@ pub struct App {
     components: Vec<Box<dyn Component>>,
     should_quit: bool,
     should_suspend: bool,
-    #[allow(dead_code)]
     page: Page,
     last_tick_key_events: Vec<KeyEvent>,
     kh: KastenHandle,
     signal_tx: UnboundedSender<Signal>,
     signal_rx: UnboundedReceiver<Signal>,
     viz_signal_tx: UnboundedSender<Signal>,
+    raw_text: bool,
 }
 
 /// The different regions of the application that the user can
 /// be interacting with. Think of these kind of like the highest class of
 /// components.
-#[derive(
-    Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, Display,
-)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, Display)]
 pub enum Page {
-    #[default]
     Zk,
     Todo(TodoRegion),
 }
 
+impl Default for Page {
+    fn default() -> Self {
+        Self::Todo(TodoRegion::Explorer)
+    }
+}
+
 impl App {
     /// Construct a new `App` instance.
-    pub async fn new(
+    pub fn new(
         tick_rate: f64,
         frame_rate: f64,
         kh: KastenHandle,
@@ -60,7 +63,7 @@ impl App {
             tick_rate,
             frame_rate,
             // components: vec![Box::new(Zk::new(kh.clone()).await?)],
-            components: vec![Box::new(Viewport::new(kh.clone()).await?)],
+            components: vec![Box::new(Viewport::new(kh.clone()))],
             should_quit: false,
             should_suspend: false,
             config: Config::parse()?,
@@ -70,6 +73,7 @@ impl App {
             signal_tx,
             signal_rx,
             viz_signal_tx,
+            raw_text: false,
         })
     }
 
@@ -148,13 +152,16 @@ impl App {
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
         debug!("key received: {key:#?}");
 
+        if self.raw_text {
+            debug!("Raw text enabled, refusing to interpret as Signal");
+            return Ok(());
+        }
+
         let signal_tx = self.signal_tx.clone();
 
         let Some(page_keymap) = self.config.keymap.get(&self.page) else {
             return Ok(());
         };
-
-        info!("page: {:#?}, page_keymap: {page_keymap:#?}", self.page);
 
         if let Some(signal) = page_keymap.get(&vec![key]) {
             signal_tx.send(signal.clone())?;
@@ -243,6 +250,9 @@ impl App {
                 Signal::ClearScreen => tui.terminal.clear()?,
                 Signal::Resize(x, y) => self.handle_resize(tui, x, y)?,
                 Signal::Render => self.render(tui)?,
+
+                Signal::EnterRawText => self.raw_text = true,
+                Signal::ExitRawText => self.raw_text = false,
                 _ => {}
             }
 

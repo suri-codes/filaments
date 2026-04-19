@@ -19,7 +19,11 @@ run:
 # Run all tests
 test:
     cargo nextest r {{_cargo_flags}} 
-
+reset: 
+    rm -rf ZettleKasten
+    rm -rf ./.data
+    cargo run -- init
+    cargo run
 
 # Only used to build / generate entities
 dev-db := justfile_directory() + "/target/dev.db"

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use serde::{Deserialize, Serialize};
 
 use crate::NodeId;
@@ -29,7 +31,7 @@ impl<T> Node<T> {
     /// let _one: Node<i32> = Node::new(1);
     /// ```
     ///
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub const fn new(data: T) -> Node<T> {
         Self {
             parent: None,
@@ -108,6 +110,14 @@ impl<T> Node<T> {
     /// ```
     pub const fn children(&self) -> &Vec<NodeId> {
         &self.children
+    }
+
+    /// Are able to sort the children of this `Node`
+    pub fn sort_children_by<F>(&mut self, mut compare: F)
+    where
+        F: FnMut(&NodeId, &NodeId) -> Ordering,
+    {
+        self.children.sort_by(|a, b| compare(a, b));
     }
 
     pub(crate) const fn children_mut(&mut self) -> &mut Vec<NodeId> {

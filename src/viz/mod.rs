@@ -91,7 +91,6 @@ impl eframe::App for FilViz {
         if let Ok(signal) = self.signal_rx.try_recv() {
             debug!("received signal in filaments: {signal}");
 
-            #[allow(clippy::single_match)]
             match signal {
                 Signal::CreatedZettel { zid } => {
                     block_on(async {
@@ -104,6 +103,13 @@ impl eframe::App for FilViz {
                     self.filaments.set_links_for_zid(&zid, links);
                 }
 
+                // this will refresh the entire screen, esentially spawning
+                // in a new graph, maybe there is a better way to do this?
+                // might be clean with conditional name-showing...
+                Signal::Refresh => block_on(async {
+                    let index = &self.kh.read().await.index;
+                    self.filaments = Filaments::from(index);
+                }),
                 _ => {}
             }
         }

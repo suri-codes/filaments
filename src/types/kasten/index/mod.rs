@@ -41,7 +41,7 @@ impl Index {
             .par_bridge()
             .flatten()
             .filter(|entry| {
-                entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
+                entry.file_type().is_ok_and(|ft| ft.is_file())
                     && entry
                         .path()
                         .extension()

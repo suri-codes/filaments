@@ -1,6 +1,6 @@
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 
-use color_eyre::eyre::eyre;
+use dto::NanoId;
 use strum::Display;
 
 use serde::{Deserialize, Serialize};
@@ -22,6 +22,10 @@ pub enum Signal {
     ClearScreen,
     Error(String),
     Help,
+
+    /// Request a refresh of the components being displayed due
+    /// to an update to the `Kasten`
+    Refresh,
 
     SwitchTo {
         page: Page,
@@ -53,29 +57,37 @@ pub enum Signal {
         zid: ZettelId,
     },
 
+    /// Create a new `Group` inside the currently selected group
+    NewSubGroup,
+
+    /// Create a new `Group` in the current scope
+    NewGroup,
+
+    /// Create a new `Task`
+    NewTask,
+
+    /// Edit the name of a `Task` or a `Group`.
+    /// Only works with the inspector
+    EditName,
+
+    /// Edit the `Priority` of a `Task` or a `Group`.
+    /// Only works with the inspector
+    EditPriority,
+
+    /// Internal Signal that tells the app to resume interpreting keys
+    ExitRawText,
+
+    /// Internal Signal that tells the app to stop interpreting keys
+    /// as signals
+    EnterRawText,
+
     /// this is fucking temporary
     Helix {
         path: PathBuf,
     },
-}
 
-impl FromStr for Signal {
-    type Err = color_eyre::Report;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.to_lowercase().as_str() {
-            "suspend" => Self::Suspend,
-            "resume" => Self::Resume,
-            "quit" => Self::Quit,
-            "movedown" => Self::MoveDown,
-            "moveup" => Self::MoveUp,
-            "openzettel" => Self::OpenZettel,
-            "newzettel" => Self::NewZettel,
-            _ => {
-                return Err(eyre!(format!(
-                    "Attempt to construct a non-user Signal from str: {s}"
-                )));
-            }
-        })
-    }
+    /// Requests the `Explorer` to select the following `NanoId`.
+    Select {
+        nanoid: NanoId,
+    },
 }

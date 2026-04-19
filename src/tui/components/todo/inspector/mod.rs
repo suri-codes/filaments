@@ -1,10 +1,22 @@
+use async_trait::async_trait;
+use crossterm::event::{KeyCode, KeyEvent};
+use dto::NanoId;
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
+    Frame,
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Widget},
+    widgets::{Block, BorderType, Borders},
 };
+use ratatui_textarea::CursorMove;
+use tokio::sync::mpsc::UnboundedSender;
 
-use crate::types::{TodoNode, TodoNodeKind};
+use crate::{
+    tui::{
+        Signal,
+        components::{Component, DEFAULT_NAME},
+    },
+    types::{Group, KastenHandle, Task, TodoNode, TodoNodeKind},
+};
 
 mod rootview;
 use rootview::RootView;
@@ -16,39 +28,24 @@ mod groupview;
 use groupview::GroupView;
 
 pub struct Inspector<'text> {
-    render_data: RenderData<'text>,
+    pub render_data: RenderData<'text>,
     margins: Layout,
     block: Block<'text>,
+    kh: KastenHandle,
+    signal_tx: Option<UnboundedSender<Signal>>,
+    is_active: bool,
+    editing: Option<Edit>,
+    // this is the `NanoId` of the thing we are actually inspecting
+    inspecting: Option<NanoId>,
+}
+
+enum Edit {
+    Name,
+    Priority,
 }
 
 impl Inspector<'_> {
-    pub fn set_active(&mut self) {
-        self.block = Block::new()
-            .title("[2]")
-            .title("Inspector")
-            .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
-            .border_style(Style::new().fg(Color::Green))
-            .border_type(BorderType::Rounded);
-    }
-
-    pub fn set_inactive(&mut self) {
-        self.block = Block::new()
-            .title("[2]")
-            .title("Inspector")
-            .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
-            .border_style(Style::new().fg(Color::Gray))
-            .border_type(BorderType::Rounded);
-    }
-}
-
-enum RenderData<'text> {
-    Root { widget: Box<RootView<'text>> },
-    Task { widget: Box<TaskView<'text>> },
-    Group { widget: Box<GroupView<'text>> },
-}
-
-impl From<&TodoNode> for Inspector<'_> {
-    fn from(value: &TodoNode) -> Self {
+    pub fn new(kh: KastenHandle, node: &TodoNode) -> Self {
         let margins = Layout::new(Direction::Horizontal, [Constraint::Percentage(100)])
             .horizontal_margin(3)
             .vertical_margin(2);
@@ -59,45 +56,247 @@ impl From<&TodoNode> for Inspector<'_> {
             .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
             .border_style(Style::new().fg(Color::Gray))
             .border_type(BorderType::Rounded);
-        match value.kind {
-            TodoNodeKind::Root => Self {
-                render_data: RenderData::Root {
-                    widget: Box::new(RootView::default()),
-                },
-                margins,
-                block,
+
+        let mut nanoid = None;
+
+        let render_data = match node.kind {
+            TodoNodeKind::Root => RenderData::Root {
+                widget: Box::new(RootView::default()),
             },
-            TodoNodeKind::Group(ref group) => Self {
-                render_data: RenderData::Group {
+            TodoNodeKind::Group(ref group) => {
+                nanoid = Some(group.id.clone());
+
+                RenderData::Group {
                     widget: Box::new(GroupView::from(&**group)),
-                },
-                margins,
-                block,
-            },
-            TodoNodeKind::Task(ref task) => Self {
-                render_data: RenderData::Task {
+                }
+            }
+            TodoNodeKind::Task(ref task) => {
+                nanoid = Some(task.id.clone());
+
+                RenderData::Task {
                     widget: Box::new(TaskView::from(&**task)),
-                },
-                margins,
-                block,
-            },
+                }
+            }
+        };
+
+        Self {
+            render_data,
+            margins,
+            block,
+            kh,
+            is_active: false,
+            editing: None,
+            inspecting: nanoid,
+            signal_tx: None,
+        }
+    }
+
+    pub fn set_active(&mut self) {
+        self.is_active = true;
+
+        self.block = Block::new()
+            .title("[2]")
+            .title("Inspector")
+            .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
+            .border_style(Style::new().fg(Color::Green))
+            .border_type(BorderType::Rounded);
+    }
+
+    pub fn set_inactive(&mut self) {
+        self.is_active = false;
+        self.block = Block::new()
+            .title("[2]")
+            .title("Inspector")
+            .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
+            .border_style(Style::new().fg(Color::Gray))
+            .border_type(BorderType::Rounded);
+    }
+
+    pub fn inspect(&mut self, node: &TodoNode) {
+        self.render_data = match node.kind {
+            TodoNodeKind::Root => {
+                self.inspecting = None;
+                RenderData::Root {
+                    widget: Box::new(RootView::default()),
+                }
+            }
+            TodoNodeKind::Group(ref group) => {
+                self.inspecting = Some(group.id.clone());
+                RenderData::Group {
+                    widget: Box::new(GroupView::from(&**group)),
+                }
+            }
+            TodoNodeKind::Task(ref task) => {
+                self.inspecting = Some(task.id.clone());
+                RenderData::Task {
+                    widget: Box::new(TaskView::from(&**task)),
+                }
+            }
         }
     }
 }
 
-impl Widget for &Inspector<'_> {
-    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
-    where
-        Self: Sized,
-    {
-        self.block.clone().render(area, buf);
+pub enum RenderData<'text> {
+    Root { widget: Box<RootView<'text>> },
+    Task { widget: Box<TaskView<'text>> },
+    Group { widget: Box<GroupView<'text>> },
+}
+
+#[async_trait]
+impl Component for Inspector<'_> {
+    fn register_signal_handler(&mut self, tx: UnboundedSender<Signal>) -> color_eyre::Result<()> {
+        self.signal_tx = Some(tx);
+        Ok(())
+    }
+
+    async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
+        match signal {
+            Signal::EditName => {
+                let name = match &mut self.render_data {
+                    RenderData::Root { widget: _ } => return Ok(None),
+                    RenderData::Task { widget } => &mut widget.name,
+                    RenderData::Group { widget } => &mut widget.name,
+                };
+
+                name.set_block(
+                    name.block()
+                        .cloned()
+                        .expect("All of them should have blocks")
+                        .border_style(Style::default().fg(Color::Green)),
+                );
+
+                if name.lines()[0].as_str().contains(DEFAULT_NAME) {
+                    name.delete_line_by_end();
+                } else {
+                    name.move_cursor(CursorMove::End);
+                }
+
+                name.set_cursor_style(Style::default().reversed());
+                name.set_cursor_line_style(Style::default().underlined());
+
+                self.editing = Some(Edit::Name);
+                return Ok(Some(Signal::EnterRawText));
+            }
+            Signal::EditPriority => {
+                let priority = match &mut self.render_data {
+                    RenderData::Root { widget: _ } => return Ok(None),
+                    RenderData::Task { widget } => &mut widget.priority,
+                    RenderData::Group { widget } => &mut widget.priority,
+                };
+
+                priority.set_block(
+                    priority
+                        .block()
+                        .cloned()
+                        .expect("All of them should have blocks")
+                        .border_style(Style::default().fg(Color::Green)),
+                );
+
+                priority.set_cursor_style(Style::default().reversed());
+                priority.set_cursor_line_style(Style::default().underlined());
+
+                self.editing = Some(Edit::Priority);
+                return Ok(Some(Signal::EnterRawText));
+            }
+
+            _ => {}
+        }
+        Ok(None)
+    }
+
+    async fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
+        let signal_tx = self
+            .signal_tx
+            .as_mut()
+            .expect("Invariant Broken, signal_tx must be initialized");
+
+        match self.editing {
+            Some(Edit::Name) => {
+                let name = match &mut self.render_data {
+                    RenderData::Root { widget: _ } => return Ok(None),
+                    RenderData::Task { widget } => &mut widget.name,
+                    RenderData::Group { widget } => &mut widget.name,
+                };
+
+                if key.code == KeyCode::Enter {
+                    name.set_cursor_style(Style::reset());
+                    name.set_cursor_line_style(Style::reset());
+                    name.set_block(
+                        name.block()
+                            .cloned()
+                            .expect("All of them should have blocks")
+                            .border_style(Style::default().fg(Color::Reset)),
+                    );
+                    self.editing = None;
+                    signal_tx.send(Signal::ExitRawText)?;
+
+                    let new_name = name.lines()[0].clone();
+                    let id = self
+                        .inspecting
+                        .clone()
+                        .expect("Invariant Broken, this must be some id");
+
+                    let mut kt = self.kh.write().await;
+                    match &self.render_data {
+                        RenderData::Task { .. } => {
+                            Task::alter_name(id.clone(), new_name, &mut kt).await?;
+                        }
+                        RenderData::Group { .. } => {
+                            Group::alter_name(id.clone(), new_name, &mut kt).await?;
+                        }
+                        RenderData::Root { .. } => unreachable!("Already returned above"),
+                    }
+
+                    drop(kt);
+
+                    Ok(Some(Signal::Refresh))
+                } else {
+                    name.input_without_shortcuts(key);
+                    Ok(None)
+                }
+            }
+            Some(Edit::Priority) => {
+                let priority = match &mut self.render_data {
+                    RenderData::Root { widget: _ } => return Ok(None),
+                    RenderData::Task { widget } => &mut widget.priority,
+                    RenderData::Group { widget } => &mut widget.priority,
+                };
+
+                if key.code == KeyCode::Enter {
+                    priority.set_cursor_style(Style::reset());
+                    priority.set_cursor_line_style(Style::reset());
+
+                    priority.set_block(
+                        priority
+                            .block()
+                            .cloned()
+                            .expect("All of them should have blocks")
+                            .border_style(Style::default().fg(Color::Reset)),
+                    );
+
+                    self.editing = None;
+                    Ok(Some(Signal::ExitRawText))
+                } else {
+                    priority.input_without_shortcuts(key);
+                    Ok(None)
+                }
+            }
+
+            None => return Ok(None),
+        }
+    }
+
+    fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::Result<()> {
+        frame.render_widget(self.block.clone(), area);
 
         let area = self.margins.split(area)[0];
 
         match &self.render_data {
-            RenderData::Root { widget } => widget.clone().render(area, buf),
-            RenderData::Task { widget } => widget.clone().render(area, buf),
-            RenderData::Group { widget } => widget.clone().render(area, buf),
+            RenderData::Root { widget } => frame.render_widget(*widget.clone(), area),
+            RenderData::Task { widget } => frame.render_widget(*widget.clone(), area),
+            RenderData::Group { widget } => frame.render_widget(*widget.clone(), area),
         }
+
+        Ok(())
     }
 }

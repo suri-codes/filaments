@@ -22,6 +22,10 @@
                 "3": SwitchTo(page: Todo(TaskList)),
                 "j": MoveDown,
                 "k": MoveUp,
+                "shift-g": NewGroup,
+                "g": NewSubGroup,
+                "t": NewTask,
+                "enter": SwitchTo(page: Todo(Inspector))
             },
         ),
         inspector: (
@@ -30,6 +34,8 @@
                 "1": SwitchTo(page: Todo(Explorer)),
                 "2": SwitchTo(page: Todo(Inspector)),
                 "3": SwitchTo(page: Todo(TaskList)),
+                "n": EditName,
+                "p": EditPriority
             },
         ),
         tasklist: (
@@ -40,6 +46,7 @@
                 "3": SwitchTo(page: Todo(TaskList)),
                 "j": MoveDown,
                 "k": MoveUp,
+                "enter": SwitchTo(page: Todo(Inspector))
             },
         ),
     ),

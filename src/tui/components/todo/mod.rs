@@ -1,4 +1,6 @@
 use async_trait::async_trait;
+use color_eyre::eyre::Result;
+use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect, Size},
@@ -7,15 +9,15 @@ use ratatui::{
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::debug;
 
 use crate::{
     tui::{Page, Signal, components::Component},
-    types::KastenHandle,
+    types::{Group, KastenHandle, Priority, Task, TodoTree},
 };
 
 mod explorer;
 use explorer::Explorer;
-
 mod tasklist;
 use tasklist::TaskList;
 
@@ -23,16 +25,19 @@ mod inspector;
 use inspector::Inspector;
 
 pub struct Todo<'text> {
-    #[expect(dead_code)]
     signal_tx: Option<UnboundedSender<Signal>>,
     kh: KastenHandle,
     layouts: Layouts,
+
     explorer: Option<Explorer<'text>>,
     task_list: Option<TaskList<'text>>,
     inspector: Option<Inspector<'text>>,
 
+    area: Size,
     active: TodoRegion,
 }
+
+pub const DEFAULT_NAME: &str = "Rename Me!";
 
 /// The different regions inside the `Todo` component
 #[derive(
@@ -54,8 +59,79 @@ impl Todo<'_> {
             explorer: None,
             task_list: None,
             inspector: None,
+            area: Size::default(),
             active: TodoRegion::default(),
         }
+    }
+
+    pub async fn refresh(&mut self) {
+        let explorer = self
+            .explorer
+            .as_mut()
+            .expect("This should have already been init.ialized");
+        let task_list = self
+            .task_list
+            .as_mut()
+            .expect("This should have already been initialized");
+
+        let explorer_selection = explorer
+            .state
+            .selected()
+            .and_then(|idx| explorer.id_list.get(idx));
+        let task_list_selection = task_list
+            .state
+            .selected()
+            .and_then(|idx| task_list.id_list.get(idx));
+
+        let mut kt = self.kh.write().await;
+
+        // fuck it we just fully rebuild the tree, how computationally expensive could it even be
+        kt.todo_tree = TodoTree::construct(&kt.db).await.expect("Must not error");
+
+        let tree = &kt.todo_tree;
+
+        debug!("tree after refresh {tree:#?}");
+        let splits = self
+            .layouts
+            .split(Rect::new(0, 0, self.area.width, self.area.height));
+
+        let l_state = ListState::default();
+
+        //TODO: instead of tree.root_id this probably should be scope.
+        let mut explorer = Explorer::new(tree, &tree.root_id, l_state, splits.explorer.width);
+        let mut task_list = TaskList::new(tree, &tree.root_id, l_state, splits.task_list.width);
+
+        debug!("explorer constructed after refresh {explorer:#?}");
+
+        drop(kt);
+
+        let explorer_selection_idx =
+            explorer_selection.and_then(|id| explorer.id_list.iter().position(|e| id == e));
+
+        let task_list_selection_idx =
+            task_list_selection.and_then(|id| task_list.id_list.iter().position(|e| id == e));
+
+        explorer.state.select(explorer_selection_idx);
+        task_list.state.select(task_list_selection_idx);
+
+        match self.active {
+            TodoRegion::Inspector => {
+                explorer.set_inactive();
+                task_list.set_inactive();
+            }
+            TodoRegion::TaskList => {
+                explorer.set_inactive();
+                task_list.set_active();
+            }
+            TodoRegion::Explorer => {
+                explorer.set_active();
+                task_list.set_inactive();
+            }
+        }
+
+        self.explorer = Some(explorer);
+        self.task_list = Some(task_list);
+        self.update_inspector_from_selection().await;
     }
 
     async fn update_inspector_from_selection(&mut self) {
@@ -71,6 +147,7 @@ impl Todo<'_> {
             .inspector
             .as_mut()
             .expect("This should have already been initialized");
+
         let selected_node_id = match self.active {
             TodoRegion::TaskList => {
                 let Some(idx) = task_list.state.selected() else {
@@ -92,11 +169,11 @@ impl Todo<'_> {
         };
         let tree = &self.kh.read().await.todo_tree.tree;
 
-        *inspector = tree
-            .get(selected_node_id)
-            .expect("Nodeid must be valid")
-            .data()
-            .into();
+        inspector.inspect(
+            tree.get(selected_node_id)
+                .expect("Nodeid must be valid")
+                .data(),
+        );
     }
 }
 
@@ -112,10 +189,7 @@ impl Default for Layouts {
                 Constraint::Percentage(40),
                 Constraint::Fill(100),
             ]),
-            inspector_task_list: Layout::vertical(vec![
-                Constraint::Percentage(30),
-                Constraint::Fill(100),
-            ]),
+            inspector_task_list: Layout::vertical(vec![Constraint::Min(16), Constraint::Fill(100)]),
         }
     }
 }
@@ -142,6 +216,7 @@ impl Layouts {
 #[async_trait]
 impl Component for Todo<'_> {
     async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
+        self.area = area;
         let tree = &self.kh.read().await.todo_tree;
         let splits = self.layouts.split(Rect::new(0, 0, area.width, area.height));
 
@@ -162,11 +237,17 @@ impl Component for Todo<'_> {
             )
             .expect("Node id must be valid");
 
-        let mut inspector: Inspector<'_> = first.data().into();
+        let mut inspector: Inspector<'_> = Inspector::new(self.kh.clone(), first.data());
 
         explorer.set_inactive();
         inspector.set_inactive();
         task_list.set_inactive();
+
+        inspector.register_signal_handler(
+            self.signal_tx
+                .clone()
+                .expect("Must be initialized by this point"),
+        )?;
 
         self.explorer = Some(explorer);
         self.task_list = Some(task_list);
@@ -175,6 +256,12 @@ impl Component for Todo<'_> {
         Ok(())
     }
 
+    fn register_signal_handler(&mut self, tx: UnboundedSender<Signal>) -> Result<()> {
+        self.signal_tx = Some(tx);
+        Ok(())
+    }
+
+    #[expect(clippy::too_many_lines)]
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
         let explorer = self
             .explorer
@@ -190,7 +277,34 @@ impl Component for Todo<'_> {
             .as_mut()
             .expect("This should have already been initialized");
 
+        let signal_tx = self
+            .signal_tx
+            .as_mut()
+            .expect("Invariant broken, must exist");
+
+        if let Ok(Some(signal)) = inspector.update(signal.clone()).await {
+            signal_tx.send(signal)?;
+        }
+
         match signal {
+            Signal::Select { nanoid } => {
+                let node_id = self
+                    .kh
+                    .read()
+                    .await
+                    .todo_tree
+                    .nanoid_to_nodeid
+                    .get(&nanoid)
+                    .expect("Invariant broken, why would we ever ask for this")
+                    .clone();
+
+                let Some(pos) = explorer.id_list.iter().position(|id| node_id == *id) else {
+                    return Ok(None);
+                };
+                explorer.state.select(Some(pos));
+                self.update_inspector_from_selection().await;
+            }
+
             Signal::SwitchTo {
                 page: Page::Todo(region),
             } => {
@@ -215,6 +329,7 @@ impl Component for Todo<'_> {
 
                 self.update_inspector_from_selection().await;
             }
+
             Signal::MoveDown => {
                 match self.active {
                     TodoRegion::TaskList => {
@@ -244,14 +359,87 @@ impl Component for Todo<'_> {
 
                 self.update_inspector_from_selection().await;
             }
+
+            Signal::NewTask => {
+                if self.active != TodoRegion::Explorer {
+                    return Ok(None);
+                }
+
+                let mut kt = self.kh.write().await;
+                let Some(parent) = explorer
+                    .group_of_current_selection(&kt.todo_tree)
+                    // .cloned()
+                    .map(|parent| parent.id.clone())
+                else {
+                    return Ok(None);
+                };
+                let task =
+                    Task::new(DEFAULT_NAME, parent, &mut kt, None, Priority::default()).await?;
+
+                drop(kt);
+                debug!("created task: {task:#?}");
+
+                signal_tx.send(Signal::Refresh)?;
+                signal_tx.send(Signal::Select { nanoid: task.id })?;
+                return Ok(Some(Signal::SwitchTo {
+                    page: Page::Todo(TodoRegion::Inspector),
+                }));
+            }
+
+            Signal::NewSubGroup => {
+                if self.active != TodoRegion::Explorer {
+                    return Ok(None);
+                }
+                let mut kt = self.kh.write().await;
+                let parent = explorer
+                    .group_of_current_selection(&kt.todo_tree)
+                    .map(|parent| parent.id.clone());
+                let group = Group::new(DEFAULT_NAME, parent, &mut kt).await?;
+                drop(kt);
+                debug!("Created group: {group:#?}");
+
+                signal_tx.send(Signal::Refresh)?;
+                signal_tx.send(Signal::Select { nanoid: group.id })?;
+                return Ok(Some(Signal::SwitchTo {
+                    page: Page::Todo(TodoRegion::Inspector),
+                }));
+            }
+
+            Signal::NewGroup => {
+                if self.active != TodoRegion::Explorer {
+                    return Ok(None);
+                }
+                debug!("Creating Group!");
+                let mut kt = self.kh.write().await;
+                let group = Group::new(DEFAULT_NAME, None, &mut kt).await?;
+                drop(kt);
+                debug!("Created group: {group:#?}");
+
+                signal_tx.send(Signal::Refresh)?;
+                signal_tx.send(Signal::Select { nanoid: group.id })?;
+                return Ok(Some(Signal::SwitchTo {
+                    page: Page::Todo(TodoRegion::Inspector),
+                }));
+            }
+
+            Signal::Refresh => {
+                self.refresh().await;
+            }
+
             _ => {}
         }
         Ok(None)
     }
 
+    async fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {
+        self.inspector.as_mut().unwrap().handle_key_event(key).await
+    }
+
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::Result<()> {
         let explorer = self.explorer.as_mut().unwrap();
         let task_list = self.task_list.as_mut().unwrap();
+
+        let inspector = self.inspector.as_mut().unwrap();
 
         let splits = self.layouts.split(area);
 
@@ -261,7 +449,9 @@ impl Component for Todo<'_> {
             splits.task_list,
             &mut task_list.state,
         );
-        frame.render_widget(self.inspector.as_ref().unwrap(), splits.inspector);
+
+        inspector.draw(frame, splits.inspector)?;
+
         Ok(())
     }
 }

@@ -30,7 +30,7 @@ impl<T> TreeBuilder<T> {
     /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new();
     ///
     /// ```
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     #[must_use]
     pub const fn new() -> TreeBuilder<T> {
         TreeBuilder {
@@ -49,7 +49,7 @@ impl<T> TreeBuilder<T> {
     /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new().with_root(Node::new(1));
     /// ```
     #[must_use]
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub fn with_root(mut self, root: Node<T>) -> TreeBuilder<T> {
         self.root = Some(root);
         self
@@ -71,7 +71,7 @@ impl<T> TreeBuilder<T> {
     ///
     /// ```
     #[must_use]
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub const fn with_node_capacity(mut self, node_capacity: usize) -> TreeBuilder<T> {
         self.node_capacity = node_capacity;
         self
@@ -82,7 +82,7 @@ impl<T> TreeBuilder<T> {
     /// `Tree`'s attempt to save time by reusing storage space
     /// when `Node`'s are removed (instead of shuffling `Node`'s around internally).
     /// To do this, the `Tree` must store information about the space left behind when a `Node`
-    /// is removed. Using this setting allows the `Tree` to pre-allocate this storage
+    /// is removed. Using this setting expects the `Tree` to pre-allocate this storage
     /// space instead of doing so as `Node`'s are removed from the `Tree`.
     ///
     /// _Use of this setting is recommended if you know the **maximum "net number
@@ -110,7 +110,7 @@ impl<T> TreeBuilder<T> {
     ///
     /// ```
     #[must_use]
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub const fn with_swap_capacity(mut self, swap_capacity: usize) -> TreeBuilder<T> {
         self.swap_capacity = swap_capacity;
         self
@@ -217,7 +217,7 @@ impl<T> Tree<T> {
     /// let _tree: Tree<i32> = Tree::new();
     /// ```
     #[must_use]
-    #[allow(clippy::use_self)]
+    #[expect(clippy::use_self)]
     pub fn new() -> Tree<T> {
         TreeBuilder::new().build()
     }
@@ -380,7 +380,7 @@ impl<T> Tree<T> {
     ///
     /// tree.insert(child_node, UnderNode(&root_id)).unwrap();
     /// ```
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value)]
     pub fn insert(
         &mut self,
         node: Node<T>,
@@ -425,7 +425,7 @@ impl<T> Tree<T> {
     /// # assert_eq!(child.children().len(), 0);
     /// # assert_eq!(child.parent(), None);
     /// ```
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value)]
     pub fn remove_node(
         &mut self,
         node_id: NodeId,
@@ -494,7 +494,7 @@ impl<T> Tree<T> {
     /// Can panic if the `NodeId` does not exist in the `Tree`, but this would
     /// be a bug in `tree`
     ///
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value)]
     pub fn move_node(
         &mut self,
         node_id: &NodeId,
@@ -985,7 +985,7 @@ impl<T> Tree<T> {
     }
 
     // We want to have the node_id be consumed by this remove function.
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value)]
     fn remove_node_internal(&mut self, node_id: NodeId) -> Node<T> {
         if let Some(root_id) = &self.root
             && node_id == *root_id
@@ -1213,7 +1213,7 @@ mod tree_builder_tests {
 }
 
 #[cfg(test)]
-#[allow(clippy::similar_names)]
+#[expect(clippy::similar_names)]
 mod tree_tests {
     use crate::InsertBehavior;
     use crate::MoveBehavior;

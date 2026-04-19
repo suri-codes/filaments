@@ -32,19 +32,19 @@ mod switcher;
 use switcher::Switcher;
 
 impl Viewport<'_> {
-    pub async fn new(kh: KastenHandle) -> Result<Self> {
+    pub fn new(kh: KastenHandle) -> Self {
         let mut switcher = Switcher::default();
         switcher.select_region(Page::default());
 
-        Ok(Self {
+        Self {
             signal_tx: None,
             _layouts: Layouts::default(),
             switcher,
-            zk: Zk::new(kh.clone()).await?,
+            zk: Zk::new(kh.clone()),
             todo: Todo::new(kh.clone()),
             active_page: Page::default(),
             kh,
-        })
+        }
     }
 }
 
@@ -65,6 +65,11 @@ impl Component for Viewport<'_> {
     async fn init(&mut self, area: Size) -> color_eyre::Result<()> {
         self.zk.init(area).await?;
         self.todo.init(area).await?;
+
+        self.signal_tx.as_mut().unwrap().send(Signal::SwitchTo {
+            page: Page::default(),
+        })?;
+
         Ok(())
     }
 
@@ -83,10 +88,10 @@ impl Component for Viewport<'_> {
             debug!("active page switched to : {page}");
         }
 
-        match self.active_page {
-            Page::Zk => self.zk.update(signal).await,
-            Page::Todo(_) => self.todo.update(signal).await,
+        if let Some(signal) = self.zk.update(signal.clone()).await? {
+            self.signal_tx.as_mut().unwrap().send(signal)?;
         }
+        self.todo.update(signal).await
     }
 
     async fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<Option<Signal>> {

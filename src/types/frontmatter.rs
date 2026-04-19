@@ -117,6 +117,36 @@ impl FrontMatter {
 
         Ok((Self::new(title, created_at, tag_strings), remaining))
     }
+
+    pub fn flush_to_file(&self, path: impl AsRef<Path>) -> Result<()> {
+        let path = path.as_ref();
+        let string = std::fs::read_to_string(path)?;
+
+        let lines: Vec<_> = string.lines().collect();
+
+        let closing_delim = lines
+            .iter()
+            .enumerate()
+            .skip(1)
+            .find(|(_, line)| line.trim() == "---")
+            .map(|(i, _)| i)
+            .ok_or_else(|| eyre!("Could not find closing front matter delimiter"))?;
+
+        let body = lines[closing_delim + 1..].join("\n");
+
+        std::fs::write(path, format!("{self}{body}"))?;
+        Ok(())
+    }
+}
+
+impl From<Zettel> for FrontMatter {
+    fn from(value: Zettel) -> Self {
+        Self {
+            title: value.title,
+            created_at: value.created_at,
+            tag_strings: value.tags.into_iter().map(|t| t.name).collect(),
+        }
+    }
 }
 
 impl Display for FrontMatter {

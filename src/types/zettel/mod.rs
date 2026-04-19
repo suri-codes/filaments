@@ -1,7 +1,8 @@
 use std::path::Path;
 
 use dto::{
-    DatabaseConnection, DateTime, TagEntity, ZettelActiveModel, ZettelEntity, ZettelModelEx,
+    DatabaseConnection, DateTime, IntoActiveModel, TagEntity, ZettelActiveModel, ZettelEntity,
+    ZettelModelEx,
 };
 
 use color_eyre::eyre::{Context, Result};
@@ -40,6 +41,50 @@ impl Zettel {
             .one(db)
             .await?
             .map(Into::into))
+    }
+
+    pub async fn alter_name(
+        id: ZettelId,
+        new_name: impl Into<String>,
+        kt: &mut Kasten,
+    ) -> Result<()> {
+        let new_name = new_name.into();
+
+        // ok we need to change it on the actual zettel and then change
+        // it in the frontmatter
+        let _ = ZettelEntity::load()
+            .filter_by_nano_id(id.clone())
+            .one(&kt.db)
+            .await?
+            .expect("Must exist")
+            .into_active_model()
+            .set_title(new_name)
+            .save(&kt.db)
+            .await?;
+
+        let zettel = Self::fetch_from_db(&id, &kt.db)
+            .await?
+            .expect("We just saved it");
+
+        let file_path = zettel.absolute_path(&kt.index);
+        let new_fm = FrontMatter::from(zettel);
+
+        new_fm.flush_to_file(file_path)?;
+        kt.index.process_zid(&id)?;
+
+        Ok(())
+    }
+
+    /// Gets the tags from the database for this `Zettel` and write it to the file.
+    pub async fn write_tags_from_db(id: ZettelId, kt: &mut Kasten) -> Result<()> {
+        let zettel = Self::fetch_from_db(&id, &kt.db).await?.expect("must exist");
+
+        let file_path = zettel.absolute_path(&kt.index);
+        let new_fm = FrontMatter::from(zettel);
+
+        new_fm.flush_to_file(file_path)?;
+        kt.index.process_zid(&id)?;
+        Ok(())
     }
 
     pub async fn new(title: impl Into<String>, kt: &mut Kasten, tags: Vec<Tag>) -> Result<Self> {
