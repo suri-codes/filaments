@@ -86,6 +86,7 @@ tower-lsp = "0.20.0"
 notify = "8.2.0"
 tree = {workspace = true}
 async-recursion = "1.1.1"
+chrono = "0.4.44"
 
 [build-dependencies]
 anyhow = "1.0.102"

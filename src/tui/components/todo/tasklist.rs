@@ -94,10 +94,12 @@ impl From<&TodoNode> for TaskListItem<'_> {
 
         let name = Span::from(task.name.clone()).style(Style::new().fg(color.into()));
         let group = Span::from(task.group.name.clone()).style(Style::new().fg(color.into()));
-        let due_priority = task
-            .due()
-            .map_or_else(|| Span::from(task.priority.to_string()), Span::from)
-            .style(Style::new().fg(color.into()));
+        let due_priority = Span::from(if task.due.has_date() {
+            task.due.to_string()
+        } else {
+            task.priority.to_string()
+        })
+        .style(Style::new().fg(color.into()));
 
         Self {
             name,

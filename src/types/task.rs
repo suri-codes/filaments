@@ -4,7 +4,7 @@ use dto::{
     TaskEntity, TaskModelEx, ZettelEntity,
 };
 
-use crate::types::{Group, Kasten, Priority, Zettel, frontmatter};
+use crate::types::{Due, Group, Kasten, Priority, Zettel, frontmatter};
 
 /// a `Task` that you have to complete!
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -15,7 +15,7 @@ pub struct Task {
     pub id: NanoId,
     pub name: String,
     pub priority: Priority,
-    pub due: Option<DateTime>,
+    pub due: Due,
     pub group_id: NanoId,
     pub finished_at: Option<DateTime>,
     pub created_at: DateTime,
@@ -129,10 +129,20 @@ impl Task {
         Ok(())
     }
 
-    pub fn due(&self) -> Option<String> {
-        self.due
-            .map(|due| due.format(frontmatter::DATE_FMT_STR).to_string())
+    pub async fn alter_due(id: NanoId, new_due: Option<DateTime>, kt: &Kasten) -> Result<()> {
+        TaskEntity::load()
+            .filter_by_nano_id(id)
+            .one(&kt.db)
+            .await?
+            .expect("Must exist")
+            .into_active_model()
+            .set_due(new_due)
+            .update(&kt.db)
+            .await?;
+
+        Ok(())
     }
+
     pub fn finished_at(&self) -> Option<String> {
         self.finished_at
             .map(|finished_at| finished_at.format(frontmatter::DATE_FMT_STR).to_string())
@@ -156,7 +166,7 @@ impl From<TaskModelEx> for Task {
             id: value.nano_id,
             name: value.name,
             priority: value.priority.into(),
-            due: value.due,
+            due: value.due.into(),
             group_id: value.group_id,
             finished_at: value.finished_at,
             created_at: value.created_at,

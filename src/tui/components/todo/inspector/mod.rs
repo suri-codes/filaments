@@ -15,7 +15,7 @@ use crate::{
         Signal,
         components::{Component, DEFAULT_NAME},
     },
-    types::{Group, KastenHandle, Priority, Task, TodoNode, TodoNodeKind},
+    types::{Due, Group, KastenHandle, Priority, Task, TodoNode, TodoNodeKind},
 };
 
 mod rootview;
@@ -42,6 +42,7 @@ pub struct Inspector<'text> {
 enum Edit {
     Name,
     Priority,
+    Due,
 }
 
 impl Inspector<'_> {
@@ -203,7 +204,7 @@ impl Component for Inspector<'_> {
                         .block()
                         .cloned()
                         .expect("All of them should have blocks")
-                        .border_style(Style::default().fg(Color::Green)),
+                        .border_style(Style::default().fg(Color::Yellow)),
                 );
 
                 priority.set_cursor_style(Style::default().reversed());
@@ -212,6 +213,44 @@ impl Component for Inspector<'_> {
                 priority.delete_line_by_end();
 
                 self.editing = Some(Edit::Priority);
+                return Ok(Some(Signal::EnterRawText));
+            }
+
+            Signal::EditDue => {
+                let kt = self.kh.read().await;
+
+                let Some(ref inspecting) = self.inspecting else {
+                    return Ok(None);
+                };
+
+                // if its finished, we arent going to edit the due date lol
+                if let TodoNodeKind::Task(task) =
+                    &kt.todo_tree.get_node_by_nano_id(inspecting).data().kind
+                    && task.finished_at.is_some()
+                {
+                    return Ok(None);
+                }
+
+                drop(kt);
+
+                let due = match &mut self.render_data {
+                    RenderData::Task { widget } => &mut widget.due_finished_at,
+                    _ => return Ok(None),
+                };
+
+                due.set_block(
+                    due.block()
+                        .cloned()
+                        .expect("All of them should have blocks")
+                        .border_style(Style::default().fg(Color::Green)),
+                );
+
+                due.set_cursor_style(Style::default().reversed());
+                due.set_cursor_line_style(Style::default().underlined());
+                due.move_cursor(CursorMove::WordBack);
+                due.delete_line_by_end();
+
+                self.editing = Some(Edit::Due);
                 return Ok(Some(Signal::EnterRawText));
             }
 
@@ -339,6 +378,70 @@ impl Component for Inspector<'_> {
                     priority.set_block(
                         priority
                             .block()
+                            .cloned()
+                            .expect("All of them should have blocks")
+                            .border_style(Style::default().fg(Color::Red)),
+                    );
+                }
+
+                Ok(None)
+            }
+
+            Some(Edit::Due) => {
+                let due = match &mut self.render_data {
+                    RenderData::Task { widget } => &mut widget.due_finished_at,
+                    _ => return Ok(None),
+                };
+
+                if key.code != KeyCode::Enter {
+                    due.input_without_shortcuts(key);
+                }
+
+                let due_str = due.lines()[0].as_str();
+
+                if let Ok(new_due) = Due::try_from(due_str) {
+                    due.set_block(
+                        due.block()
+                            .cloned()
+                            .expect("All of them should have blocks")
+                            .border_style(Style::default().fg(Color::Green)),
+                    );
+
+                    if key.code == KeyCode::Enter {
+                        self.editing = None;
+                        signal_tx.send(Signal::ExitRawText)?;
+
+                        due.set_cursor_style(Style::reset());
+                        due.set_cursor_line_style(Style::reset());
+
+                        due.set_block(
+                            due.block()
+                                .cloned()
+                                .expect("All of them should have blocks")
+                                .border_style(Style::default().fg(Color::Reset)),
+                        );
+
+                        let id = self
+                            .inspecting
+                            .clone()
+                            .expect("Invariant Broken, this must be some id");
+
+                        let kt = self.kh.read().await;
+
+                        match &self.render_data {
+                            RenderData::Task { .. } => {
+                                Task::alter_due(id.clone(), new_due.into(), &kt).await?;
+                            }
+                            _ => unreachable!("Already returned above"),
+                        }
+
+                        drop(kt);
+
+                        return Ok(Some(Signal::Refresh));
+                    }
+                } else {
+                    due.set_block(
+                        due.block()
                             .cloned()
                             .expect("All of them should have blocks")
                             .border_style(Style::default().fg(Color::Red)),

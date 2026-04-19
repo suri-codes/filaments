@@ -11,6 +11,9 @@ mod zettel;
 pub use zettel::Zettel;
 pub use zettel::ZettelId;
 
+mod due;
+pub use due::Due;
+
 mod group;
 pub use group::Group;
 

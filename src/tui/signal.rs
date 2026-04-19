@@ -74,6 +74,10 @@ pub enum Signal {
     /// Only works with the inspector
     EditPriority,
 
+    /// Edit the `DueDate` of a `Task`
+    /// Only works with the inspector
+    EditDue,
+
     /// Internal Signal that tells the app to resume interpreting keys
     ExitRawText,
 

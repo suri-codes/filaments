@@ -47,6 +47,7 @@
                 ),
                 "p": EditPriority,
                 "n": EditName,
+                "d": EditDue,
                 "3": SwitchTo(
                     page: Todo(TaskList),
                 ),

@@ -11,8 +11,8 @@ use crate::types::Task;
 pub struct TaskView<'text> {
     pub name: TextArea<'text>,
     pub priority: TextArea<'text>,
+    pub due_finished_at: TextArea<'text>,
     parent_group: Paragraph<'text>,
-    due_finished_at: Paragraph<'text>,
     layouts: Layouts,
 }
 
@@ -52,17 +52,17 @@ impl From<&Task> for TaskView<'_> {
         priority.set_cursor_line_style(Style::reset());
 
         let due_finished_at = {
-            value.finished_at().map_or_else(
-                || {
-                    value.due().map_or_else(
-                        || Paragraph::new("None").block(Block::bordered().title("Due")),
-                        |due| Paragraph::new(due).block(Block::bordered().title("Due")),
-                    )
-                },
-                |finished| Paragraph::new(finished).block(Block::bordered().title("Finished At")),
-            )
-        };
+            let (title, content) = value.finished_at().map_or_else(
+                || ("[D]ue", value.due.to_string()),
+                |finished| ("[F]inished At", finished),
+            );
 
+            let mut textarea = TextArea::new(vec![content]);
+            textarea.set_block(Block::bordered().title(title));
+            textarea.set_cursor_style(Style::reset());
+            textarea.set_cursor_line_style(Style::reset());
+            textarea
+        };
         Self {
             name,
             priority,
