@@ -242,14 +242,17 @@ impl Component for Todo<'_> {
         explorer.set_inactive();
         inspector.set_inactive();
         task_list.set_inactive();
+
+        inspector.register_signal_handler(
+            self.signal_tx
+                .clone()
+                .expect("Must be initialized by this point"),
+        )?;
+
         self.explorer = Some(explorer);
         self.task_list = Some(task_list);
         self.inspector = Some(inspector);
 
-        self.inspector
-            .as_mut()
-            .unwrap()
-            .register_signal_handler(self.signal_tx.clone().unwrap())?;
         Ok(())
     }
 

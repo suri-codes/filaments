@@ -104,6 +104,13 @@ impl eframe::App for FilViz {
                     self.filaments.set_links_for_zid(&zid, links);
                 }
 
+                // this will refresh the entire screen, esentially spawning
+                // in a new graph, maybe there is a better way to do this?
+                // might be clean with conditional name-showing...
+                Signal::Refresh => block_on(async {
+                    let index = &self.kh.read().await.index;
+                    self.filaments = Filaments::from(index);
+                }),
                 _ => {}
             }
         }

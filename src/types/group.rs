@@ -61,20 +61,12 @@ impl Group {
         let _ = g
             .into_active_model()
             .set_name(new_name.as_str())
-            .save(&kt.db)
+            .update(&kt.db)
             .await?;
 
-        TagEntity::load()
-            .filter_by_nano_id(tag_id)
-            .one(&kt.db)
-            .await?
-            .expect("Invariant Broken: Must exist")
-            .into_active_model()
-            .set_name(new_name.as_str())
-            .save(&kt.db)
-            .await?;
+        Tag::alter_name(tag_id, &new_name, kt).await?;
 
-        Zettel::alter_name(zettel_id.into(), new_name, kt).await?;
+        Zettel::alter_name(zettel_id.into(), &new_name, kt).await?;
 
         Ok(())
     }

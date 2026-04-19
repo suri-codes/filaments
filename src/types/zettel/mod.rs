@@ -75,6 +75,18 @@ impl Zettel {
         Ok(())
     }
 
+    /// Gets the tags from the database for this `Zettel` and write it to the file.
+    pub async fn write_tags_from_db(id: ZettelId, kt: &mut Kasten) -> Result<()> {
+        let zettel = Self::fetch_from_db(&id, &kt.db).await?.expect("must exist");
+
+        let file_path = zettel.absolute_path(&kt.index);
+        let new_fm = FrontMatter::from(zettel);
+
+        new_fm.flush_to_file(file_path)?;
+        kt.index.process_zid(&id)?;
+        Ok(())
+    }
+
     pub async fn new(title: impl Into<String>, kt: &mut Kasten, tags: Vec<Tag>) -> Result<Self> {
         // fn new(title: impl Into<String>) -> Result<Self> {
         let title = title.into();
