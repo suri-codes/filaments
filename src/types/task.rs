@@ -115,6 +115,20 @@ impl Task {
         Ok(())
     }
 
+    pub async fn alter_priority(id: NanoId, new_prio: Priority, kt: &Kasten) -> Result<()> {
+        TaskEntity::load()
+            .filter_by_nano_id(id)
+            .one(&kt.db)
+            .await?
+            .expect("Must exist")
+            .into_active_model()
+            .set_priority(new_prio)
+            .update(&kt.db)
+            .await?;
+
+        Ok(())
+    }
+
     pub fn due(&self) -> Option<String> {
         self.due
             .map(|due| due.format(frontmatter::DATE_FMT_STR).to_string())

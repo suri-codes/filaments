@@ -11,7 +11,7 @@ use tracing::{debug, info, trace};
 use crate::{
     config::Config,
     tui::{Event, Tui, components::Viewport},
-    types::{KastenHandle, ZettelId},
+    types::{KastenHandle, TodoTree, ZettelId},
 };
 
 pub use crate::tui::components::TodoRegion;
@@ -241,6 +241,12 @@ impl App {
                 Signal::SwitchTo { page } => {
                     info!("Switched page to {page:#?}");
                     self.page = page;
+                }
+
+                Signal::Refresh => {
+                    let mut kt = self.kh.write().await;
+                    // fuck it we just fully rebuild the tree, how computationally expensive could it even be
+                    kt.todo_tree = TodoTree::construct(&kt.db).await.expect("Must not error");
                 }
 
                 Signal::Suspend => self.should_suspend = true,

@@ -13,7 +13,7 @@ use tracing::debug;
 
 use crate::{
     tui::{Page, Signal, components::Component},
-    types::{Group, KastenHandle, Priority, Task, TodoTree},
+    types::{Group, KastenHandle, Priority, Task},
 };
 
 mod explorer;
@@ -83,10 +83,7 @@ impl Todo<'_> {
             .selected()
             .and_then(|idx| task_list.id_list.get(idx));
 
-        let mut kt = self.kh.write().await;
-
-        // fuck it we just fully rebuild the tree, how computationally expensive could it even be
-        kt.todo_tree = TodoTree::construct(&kt.db).await.expect("Must not error");
+        let kt = self.kh.read().await;
 
         let tree = &kt.todo_tree;
 
@@ -131,7 +128,6 @@ impl Todo<'_> {
 
         self.explorer = Some(explorer);
         self.task_list = Some(task_list);
-        self.update_inspector_from_selection().await;
     }
 
     async fn update_inspector_from_selection(&mut self) {
