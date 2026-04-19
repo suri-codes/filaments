@@ -65,6 +65,10 @@ pub enum Signal {
     /// Create a new `Task`
     NewTask,
 
+    /// Edit the name of a `Task` or a `Group`.
+    /// Only works with the inspector
+    EditName,
+
     /// this is fucking temporary
     Helix {
         path: PathBuf,

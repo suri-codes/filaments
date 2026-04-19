@@ -182,10 +182,7 @@ impl Default for Layouts {
                 Constraint::Percentage(40),
                 Constraint::Fill(100),
             ]),
-            inspector_task_list: Layout::vertical(vec![
-                Constraint::Percentage(30),
-                Constraint::Fill(100),
-            ]),
+            inspector_task_list: Layout::vertical(vec![Constraint::Min(16), Constraint::Fill(100)]),
         }
     }
 }

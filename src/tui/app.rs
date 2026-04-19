@@ -37,13 +37,16 @@ pub struct App {
 /// The different regions of the application that the user can
 /// be interacting with. Think of these kind of like the highest class of
 /// components.
-#[derive(
-    Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, Display,
-)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, Display)]
 pub enum Page {
-    #[default]
     Zk,
     Todo(TodoRegion),
+}
+
+impl Default for Page {
+    fn default() -> Self {
+        Self::Todo(TodoRegion::Explorer)
+    }
 }
 
 impl App {
