@@ -40,11 +40,10 @@ impl ActiveModelBehavior for ActiveModel {
             self.color = Set(Color::default());
         }
 
-        if let Set(ref mut name) = self.name
-            && insert
-        {
+        if let Set(ref mut name) = self.name {
             *name = name.replace(' ', "_");
         }
+
         Box::pin(ready(Ok(self)))
     }
 }

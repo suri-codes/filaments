@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent};
-use dto::{GroupEntity, IntoActiveModel, NanoId, TagEntity, TaskEntity};
+use dto::NanoId;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -15,7 +15,7 @@ use crate::{
         Signal,
         components::{Component, DEFAULT_NAME},
     },
-    types::{Group, KastenHandle, TodoNode, TodoNodeKind},
+    types::{Group, KastenHandle, Task, TodoNode, TodoNodeKind},
 };
 
 mod rootview;
@@ -241,15 +241,7 @@ impl Component for Inspector<'_> {
                     let mut kt = self.kh.write().await;
                     match &self.render_data {
                         RenderData::Task { .. } => {
-                            let _ = TaskEntity::load()
-                                .filter_by_nano_id(id.clone())
-                                .one(&kt.db)
-                                .await?
-                                .expect("Invariant Broken: Must exist")
-                                .into_active_model()
-                                .set_name(new_name.as_str())
-                                .save(&kt.db)
-                                .await?;
+                            Task::alter_name(id.clone(), new_name, &mut kt).await?;
                         }
                         RenderData::Group { .. } => {
                             Group::alter_name(id.clone(), new_name, &mut kt).await?;

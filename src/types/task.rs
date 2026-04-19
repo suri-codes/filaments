@@ -91,6 +91,32 @@ impl Task {
         Ok(task)
     }
 
+    pub async fn alter_name(
+        id: NanoId,
+        new_name: impl Into<String>,
+        kt: &mut Kasten,
+    ) -> Result<()> {
+        let new_name = new_name.into();
+
+        let task = TaskEntity::load()
+            .filter_by_nano_id(id.clone())
+            .one(&kt.db)
+            .await?
+            .expect("Invariant Broken: Must exist");
+
+        let zettel_id = task.zettel_id.clone();
+
+        let _ = task
+            .into_active_model()
+            .set_name(new_name.as_str())
+            .save(&kt.db)
+            .await?;
+
+        Zettel::alter_name(zettel_id.into(), new_name, kt).await?;
+
+        Ok(())
+    }
+
     pub fn due(&self) -> Option<String> {
         self.due
             .map(|due| due.format(frontmatter::DATE_FMT_STR).to_string())

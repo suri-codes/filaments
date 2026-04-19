@@ -1,10 +1,10 @@
 (
     directory: "/Users/suri/dev/projects/filaments/ZettelKasten",
     global_key_binds: {
-        "ctrl-z": Suspend,
-        "up": MoveUp,
-        "ctrl-c": Quit,
         "down": MoveDown,
+        "ctrl-z": Suspend,
+        "ctrl-c": Quit,
+        "up": MoveUp,
     },
     zk: (
         keybinds: {
@@ -18,62 +18,62 @@
     todo: (
         explorer: (
             keybinds: {
-                "j": MoveDown,
-                "tab": SwitchTo(
-                    page: Zk,
-                ),
-                "k": MoveUp,
                 "1": SwitchTo(
                     page: Todo(Explorer),
                 ),
-                "g": NewSubGroup,
-                "t": NewTask,
+                "j": MoveDown,
                 "enter": SwitchTo(
                     page: Todo(Inspector),
                 ),
+                "tab": SwitchTo(
+                    page: Zk,
+                ),
+                "g": NewSubGroup,
                 "2": SwitchTo(
                     page: Todo(Inspector),
                 ),
+                "t": NewTask,
                 "3": SwitchTo(
                     page: Todo(TaskList),
                 ),
                 "shift-g": NewGroup,
+                "k": MoveUp,
             },
         ),
         inspector: (
             keybinds: {
-                "p": EditPriority,
                 "tab": SwitchTo(
                     page: Zk,
-                ),
-                "2": SwitchTo(
-                    page: Todo(Inspector),
-                ),
-                "3": SwitchTo(
-                    page: Todo(TaskList),
                 ),
                 "1": SwitchTo(
                     page: Todo(Explorer),
                 ),
                 "n": EditName,
+                "3": SwitchTo(
+                    page: Todo(TaskList),
+                ),
+                "p": EditPriority,
+                "2": SwitchTo(
+                    page: Todo(Inspector),
+                ),
             },
         ),
         tasklist: (
             keybinds: {
+                "k": MoveUp,
+                "enter": SwitchTo(
+                    page: Todo(Inspector),
+                ),
                 "tab": SwitchTo(
                     page: Zk,
                 ),
                 "3": SwitchTo(
                     page: Todo(TaskList),
                 ),
-                "k": MoveUp,
-                "j": MoveDown,
-                "enter": SwitchTo(
-                    page: Todo(Inspector),
-                ),
                 "2": SwitchTo(
                     page: Todo(Inspector),
                 ),
+                "j": MoveDown,
                 "1": SwitchTo(
                     page: Todo(Explorer),
                 ),
