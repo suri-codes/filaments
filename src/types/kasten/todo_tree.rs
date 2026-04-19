@@ -20,11 +20,16 @@ pub enum TodoNodeKind {
 pub struct TodoNode {
     pub depth: usize,
     pub kind: TodoNodeKind,
+    pub p_score: f64,
 }
 
 impl TodoNode {
-    pub const fn new(kind: TodoNodeKind, depth: usize) -> Self {
-        Self { depth, kind }
+    pub const fn new(kind: TodoNodeKind, depth: usize, pscore: f64) -> Self {
+        Self {
+            depth,
+            kind,
+            p_score: pscore,
+        }
     }
 }
 
@@ -40,7 +45,7 @@ impl TodoTree {
         let mut tree = Tree::<TodoNode>::new();
         let root_id = tree
             .insert(
-                Node::new(TodoNode::new(TodoNodeKind::Root, 0)),
+                Node::new(TodoNode::new(TodoNodeKind::Root, 0, 1.0)),
                 InsertBehavior::AsRoot,
             )
             .with_context(|| "Could not create root node.")?;
@@ -64,7 +69,7 @@ impl TodoTree {
 
         for group in root_groups {
             todo_tree
-                .add_group_to_tree(db, &root_id, Box::new(group), 0)
+                .add_group_to_tree(db, &root_id, Box::new(group), 0, 1.0)
                 .await?;
         }
 
@@ -78,11 +83,14 @@ impl TodoTree {
         parent_node_id: &NodeId,
         group: Box<Group>,
         depth: usize,
+        parent_p_score: f64,
     ) -> Result<()> {
         let group_id = group.id.clone();
 
+        let p_score = group.p_score(parent_p_score);
+
         let group_node_id = self.tree.insert(
-            Node::new(TodoNode::new(TodoNodeKind::Group(group), depth)),
+            Node::new(TodoNode::new(TodoNodeKind::Group(group), depth, p_score)),
             InsertBehavior::UnderNode(parent_node_id),
         )?;
 
@@ -110,9 +118,15 @@ impl TodoTree {
             .collect();
 
         for task in tasks {
+            let p_score = task.p_score(p_score);
+
             let task_id = task.id.clone();
             let task_node_id = self.tree.insert(
-                Node::new(TodoNode::new(TodoNodeKind::Task(Box::new(task)), depth + 1)),
+                Node::new(TodoNode::new(
+                    TodoNodeKind::Task(Box::new(task)),
+                    depth + 1,
+                    p_score,
+                )),
                 InsertBehavior::UnderNode(&group_node_id),
             )?;
 
@@ -131,7 +145,7 @@ impl TodoTree {
             .collect();
 
         for group in children_groups {
-            self.add_group_to_tree(db, &group_node_id, Box::new(group), depth + 1)
+            self.add_group_to_tree(db, &group_node_id, Box::new(group), depth + 1, p_score)
                 .await?;
         }
 
@@ -157,12 +171,22 @@ impl TodoTree {
                 + 1
         };
 
+        let parent_p_score = self
+            .tree
+            .get(&parent_node_id)
+            .expect("must exist")
+            .data()
+            .p_score;
+
+        let my_pscore = parent_p_score * group.priority.p_score();
+
         let inserted_node_id = self
             .tree
             .insert(
                 Node::new(TodoNode::new(
                     super::TodoNodeKind::Group(Box::new(group.clone())),
                     my_depth,
+                    my_pscore,
                 )),
                 tree::InsertBehavior::UnderNode(&parent_node_id),
             )
@@ -189,12 +213,22 @@ impl TodoTree {
             .depth
             + 1;
 
+        let parent_p_score = self
+            .tree
+            .get(&parent_node_id)
+            .expect("must exist")
+            .data()
+            .p_score;
+
+        let my_pscore = task.p_score(parent_p_score);
+
         let inserted_node_id = self
             .tree
             .insert(
                 Node::new(TodoNode::new(
                     super::TodoNodeKind::Task(Box::new(task.clone())),
                     my_depth,
+                    my_pscore,
                 )),
                 tree::InsertBehavior::UnderNode(&parent_node_id),
             )

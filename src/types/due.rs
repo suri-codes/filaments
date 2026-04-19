@@ -3,7 +3,7 @@ use chrono::Datelike;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Due(Option<dto::DateTime>);
+pub struct Due(pub Option<dto::DateTime>);
 
 impl Due {
     pub const fn has_date(&self) -> bool {

@@ -10,6 +10,18 @@ pub struct Priority {
     field1: PriorityDTO,
 }
 
+impl Priority {
+    pub const fn p_score(&self) -> f64 {
+        match self.field1 {
+            PriorityDTO::Asap => 1.0,
+            PriorityDTO::High => 0.9,
+            PriorityDTO::Medium => 0.75,
+            PriorityDTO::Low => 0.5,
+            PriorityDTO::Far => 0.25,
+        }
+    }
+}
+
 impl From<PriorityDTO> for Priority {
     fn from(value: PriorityDTO) -> Self {
         Self { field1: value }

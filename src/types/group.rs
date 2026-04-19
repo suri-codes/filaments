@@ -129,6 +129,11 @@ impl Group {
         Ok(())
     }
 
+    /// Calcualtes the `p_score` of this `Group`
+    pub fn p_score(&self, parent_score: f64) -> f64 {
+        self.priority.p_score() * parent_score
+    }
+
     pub fn created_at(&self) -> String {
         self.created_at
             .format(frontmatter::DATE_FMT_STR)

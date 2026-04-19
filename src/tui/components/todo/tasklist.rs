@@ -19,28 +19,39 @@ impl TaskList<'_> {
     pub fn new(tree: &TodoTree, scope: &NodeId, state: ListState, width: u16) -> Self {
         let mut id_list = vec![];
 
-        let render_list = List::new(
-            tree.tree
-                .traverse_pre_order(scope)
-                .expect("This should not panic as the node id should exist inside")
-                .zip(
-                    tree.tree
-                        .traverse_pre_order_ids(scope)
-                        .expect("This should not panic as the nodeid should exist inside"),
-                )
-                .filter_map(|(node, id)| {
-                    let TodoNodeKind::Task(_) = node.data().kind else {
-                        return None;
-                    };
+        let mut items = tree
+            .tree
+            .traverse_pre_order(scope)
+            .expect("This should not panic as the node id sohuld exist inside")
+            .zip(
+                tree.tree
+                    .traverse_pre_order_ids(scope)
+                    .expect("This should not panic as the nodeid should exist inside"),
+            )
+            .filter(|(node, _)| {
+                let TodoNodeKind::Task(_) = node.data().kind else {
+                    return false;
+                };
+                true
+            })
+            .collect::<Vec<_>>();
 
-                    let mut tli: TaskListItem<'_> = node.data().into();
+        items.sort_by(|(a, _), (b, _)| a.data().p_score.total_cmp(&b.data().p_score));
 
-                    id_list.push(id);
+        items.reverse();
 
-                    tli.width = width;
-                    Some(Text::from(tli))
-                }),
-        )
+        let render_list = List::new(items.into_iter().map(|(node, id)| {
+            let TodoNodeKind::Task(_) = node.data().kind else {
+                unreachable!("we already filtered for this earlier")
+            };
+
+            let mut tli: TaskListItem<'_> = node.data().into();
+
+            id_list.push(id);
+
+            tli.width = width;
+            Text::from(tli)
+        }))
         .style(Color::White)
         .highlight_style(Style::new().on_dark_gray());
 
@@ -79,6 +90,7 @@ pub struct TaskListItem<'text> {
     name: Span<'text>,
     group: Span<'text>,
     due_priority: Span<'text>,
+    p_score: Span<'text>,
     width: u16,
 }
 
@@ -101,11 +113,15 @@ impl From<&TodoNode> for TaskListItem<'_> {
         })
         .style(Style::new().fg(color.into()));
 
+        let p_score =
+            Span::from(format!("{:.3}", value.p_score)).style(Style::new().fg(color.into()));
+
         Self {
             name,
             group,
             due_priority,
             width: 0,
+            p_score,
         }
     }
 }
@@ -113,19 +129,21 @@ impl From<&TodoNode> for TaskListItem<'_> {
 impl<'text> From<TaskListItem<'text>> for Text<'text> {
     fn from(value: TaskListItem<'text>) -> Self {
         let total_width = value.width.saturating_sub(2) as usize;
-        let name_col = total_width / 2;
-        let due_content = value.due_priority.content.as_ref();
-        let due_col = due_content.len();
-        let group_col = total_width.saturating_sub(name_col + due_col);
+        let name_col = 5 * total_width / 9;
+        let p_score_col = 10; // e.g. "0.103" — fixed width
+        let due_col = 22; // enough for "2026-04-22 11:59:59 PM" or a priority label
+        let group_col = total_width.saturating_sub(name_col + p_score_col + due_col);
 
         let name_str = format!("{:<width$}", value.name.content, width = name_col);
         let group_str = format!("{:<width$}", value.group.content, width = group_col);
-        let due_str = format!("{due_content:>due_col$}");
+        let p_score_str = format!("{:<width$}", value.p_score.content, width = p_score_col);
+        let due_str = format!("{:>width$}", value.due_priority.content, width = due_col);
 
         let name = Span::styled(name_str, value.name.style);
         let group = Span::styled(group_str, value.group.style);
+        let p_score = Span::styled(p_score_str, value.p_score.style);
         let due = Span::styled(due_str, value.due_priority.style);
 
-        Line::from(vec![name, group, due]).into()
+        Line::from(vec![name, group, p_score, due]).into()
     }
 }

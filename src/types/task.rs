@@ -143,6 +143,24 @@ impl Task {
         Ok(())
     }
 
+    /// Calcualtes the `p_score` of this `Task`
+    //NOTE: formula from claude
+    #[expect(clippy::cast_precision_loss)]
+    pub fn p_score(&self, parent_score: f64) -> f64 {
+        let priority_score = self.priority.p_score(); // [0.0, 1.0]
+        let urgency = self.due.0.map_or(1.0, |due| {
+            let now = chrono::Local::now().naive_local();
+            let hours_remaining = (due - now).num_minutes() as f64 / 60.0;
+
+            // Exponential urgency: peaks at/past due, approaches 0 far in future
+            // Half-life of ~72 hours — tune this constant to taste
+            let decay = 72.0_f64;
+            (-hours_remaining / decay).exp2()
+        });
+
+        priority_score * urgency * parent_score
+    }
+
     pub fn finished_at(&self) -> Option<String> {
         self.finished_at
             .map(|finished_at| finished_at.format(frontmatter::DATE_FMT_STR).to_string())
