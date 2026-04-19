@@ -234,6 +234,8 @@ impl App {
 
                     self.signal_tx.send(Signal::ClosedZettel { zid })?;
 
+                    self.signal_tx.send(Signal::Refresh)?;
+
                     tui.terminal.clear()?;
                     tui.enter()?;
                 }

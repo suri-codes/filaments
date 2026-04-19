@@ -165,11 +165,13 @@ impl Todo<'_> {
         };
         let tree = &self.kh.read().await.todo_tree.tree;
 
-        inspector.inspect(
-            tree.get(selected_node_id)
-                .expect("Nodeid must be valid")
-                .data(),
-        );
+        inspector
+            .inspect(
+                tree.get(selected_node_id)
+                    .expect("Nodeid must be valid")
+                    .data(),
+            )
+            .await;
     }
 }
 
@@ -233,7 +235,7 @@ impl Component for Todo<'_> {
             )
             .expect("Node id must be valid");
 
-        let mut inspector: Inspector<'_> = Inspector::new(self.kh.clone(), first.data());
+        let mut inspector: Inspector<'_> = Inspector::new(self.kh.clone(), first.data()).await;
 
         explorer.set_inactive();
         inspector.set_inactive();

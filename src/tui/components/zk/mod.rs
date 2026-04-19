@@ -11,7 +11,7 @@ use crate::{
     types::{KastenHandle, Zettel},
 };
 
-mod preview;
+pub mod preview;
 mod search;
 mod zettel_list;
 mod zettel_view;

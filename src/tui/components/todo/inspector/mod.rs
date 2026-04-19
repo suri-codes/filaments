@@ -46,7 +46,7 @@ enum Edit {
 }
 
 impl Inspector<'_> {
-    pub fn new(kh: KastenHandle, node: &TodoNode) -> Self {
+    pub async fn new(kh: KastenHandle, node: &TodoNode) -> Self {
         let margins = Layout::new(Direction::Horizontal, [Constraint::Percentage(100)])
             .horizontal_margin(3)
             .vertical_margin(2);
@@ -59,6 +59,7 @@ impl Inspector<'_> {
             .border_type(BorderType::Rounded);
 
         let mut nanoid = None;
+        let kt = kh.read().await;
 
         let render_data = match node.kind {
             TodoNodeKind::Root => RenderData::Root {
@@ -68,17 +69,19 @@ impl Inspector<'_> {
                 nanoid = Some(group.id.clone());
 
                 RenderData::Group {
-                    widget: Box::new(GroupView::from(&**group)),
+                    widget: Box::new(GroupView::from((&**group, &kt.index))),
                 }
             }
             TodoNodeKind::Task(ref task) => {
                 nanoid = Some(task.id.clone());
 
                 RenderData::Task {
-                    widget: Box::new(TaskView::from(&**task)),
+                    widget: Box::new(TaskView::from((&**task, &kt.index))),
                 }
             }
         };
+
+        drop(kt);
 
         Self {
             render_data,
@@ -113,7 +116,9 @@ impl Inspector<'_> {
             .border_type(BorderType::Rounded);
     }
 
-    pub fn inspect(&mut self, node: &TodoNode) {
+    pub async fn inspect(&mut self, node: &TodoNode) {
+        let kt = self.kh.read().await;
+
         self.render_data = match node.kind {
             TodoNodeKind::Root => {
                 self.inspecting = None;
@@ -124,13 +129,13 @@ impl Inspector<'_> {
             TodoNodeKind::Group(ref group) => {
                 self.inspecting = Some(group.id.clone());
                 RenderData::Group {
-                    widget: Box::new(GroupView::from(&**group)),
+                    widget: Box::new(GroupView::from((&**group, &kt.index))),
                 }
             }
             TodoNodeKind::Task(ref task) => {
                 self.inspecting = Some(task.id.clone());
                 RenderData::Task {
-                    widget: Box::new(TaskView::from(&**task)),
+                    widget: Box::new(TaskView::from((&**task, &kt.index))),
                 }
             }
         }
@@ -145,7 +150,7 @@ impl Inspector<'_> {
             return;
         };
         let node = kt.todo_tree.get_node_by_nano_id(inspecting).data();
-        self.inspect(node);
+        self.inspect(node).await;
 
         drop(kt);
     }
@@ -166,6 +171,14 @@ impl Component for Inspector<'_> {
 
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
         match signal {
+            Signal::SwitchTo {
+                page: crate::tui::Page::Zk,
+            } => {
+                self.is_active = false;
+
+                self.set_inactive();
+            }
+
             Signal::EditName => {
                 let name = match &mut self.render_data {
                     RenderData::Root { widget: _ } => return Ok(None),
