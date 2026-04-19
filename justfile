@@ -22,6 +22,7 @@ test:
 reset: 
     rm -rf ZettleKasten
     cargo run -- init
+    cargo run
 
 # Only used to build / generate entities
 dev-db := justfile_directory() + "/target/dev.db"

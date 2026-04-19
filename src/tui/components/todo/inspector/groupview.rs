@@ -9,8 +9,8 @@ use crate::types::Group;
 
 #[derive(Debug, Clone)]
 pub struct GroupView<'text> {
-    name: TextArea<'text>,
-    priority: TextArea<'text>,
+    pub name: TextArea<'text>,
+    pub priority: TextArea<'text>,
     created_at: Paragraph<'text>,
     layouts: Layouts,
 }

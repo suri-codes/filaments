@@ -234,4 +234,22 @@ impl TodoTree {
             Ordering::Equal
         });
     }
+
+    pub fn get_node_by_nano_id(&self, nano_id: &NanoId) -> &Node<TodoNode> {
+        let node_id = self
+            .nanoid_to_nodeid
+            .get(nano_id)
+            .expect("invariant broken!");
+
+        self.tree.get(node_id).expect("Invariant Broken!")
+    }
+
+    pub fn get_node_mut_by_nano_id(&mut self, nano_id: &NanoId) -> &mut Node<TodoNode> {
+        let node_id = self
+            .nanoid_to_nodeid
+            .get(nano_id)
+            .expect("invariant broken!");
+
+        self.tree.get_mut(node_id).expect("Invariant Broken!")
+    }
 }

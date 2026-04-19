@@ -32,6 +32,7 @@ pub struct App {
     signal_tx: UnboundedSender<Signal>,
     signal_rx: UnboundedReceiver<Signal>,
     viz_signal_tx: UnboundedSender<Signal>,
+    raw_text: bool,
 }
 
 /// The different regions of the application that the user can
@@ -73,6 +74,7 @@ impl App {
             signal_tx,
             signal_rx,
             viz_signal_tx,
+            raw_text: false,
         })
     }
 
@@ -150,6 +152,11 @@ impl App {
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
         debug!("key received: {key:#?}");
+
+        if self.raw_text {
+            debug!("Raw text enabled, refusing to interpret as Signal");
+            return Ok(());
+        }
 
         let signal_tx = self.signal_tx.clone();
 
@@ -244,6 +251,9 @@ impl App {
                 Signal::ClearScreen => tui.terminal.clear()?,
                 Signal::Resize(x, y) => self.handle_resize(tui, x, y)?,
                 Signal::Render => self.render(tui)?,
+
+                Signal::EnterRawText => self.raw_text = true,
+                Signal::ExitRawText => self.raw_text = false,
                 _ => {}
             }
 

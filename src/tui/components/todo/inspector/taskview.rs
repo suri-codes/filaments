@@ -9,8 +9,8 @@ use crate::types::Task;
 
 #[derive(Debug, Clone)]
 pub struct TaskView<'text> {
-    name: TextArea<'text>,
-    priority: TextArea<'text>,
+    pub name: TextArea<'text>,
+    pub priority: TextArea<'text>,
     parent_group: Paragraph<'text>,
     due_finished_at: Paragraph<'text>,
     layouts: Layouts,

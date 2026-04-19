@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use dto::NanoId;
 use strum::Display;
 
 use serde::{Deserialize, Serialize};
@@ -69,9 +70,25 @@ pub enum Signal {
     /// Only works with the inspector
     EditName,
 
+    /// Edit the `Priority` of a `Task` or a `Group`.
+    /// Only works with the inspector
+    EditPriority,
+
+    /// Internal Signal that tells the app to resume interpreting keys
+    ExitRawText,
+
+    /// Internal Signal that tells the app to stop interpreting keys
+    /// as signals
+    EnterRawText,
+
     /// this is fucking temporary
     Helix {
         path: PathBuf,
+    },
+
+    /// Requests the `Explorer` to select the following `NanoId`.
+    Select {
+        nanoid: NanoId,
     },
 }
 
