@@ -153,22 +153,35 @@ fn parse_due_date(s: &str) -> Result<Option<dto::DateTime>, String> {
 
     // 5. Datetime formats
     let datetime_fmts: &[&str] = &[
+        // ISO 8601
         "%Y-%m-%dT%H:%M:%S",
         "%Y-%m-%dT%H:%M",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%d %H:%M",
-        "%d/%m/%Y %H:%M:%S",
-        "%d/%m/%Y %H:%M",
+        // MM/DD/YYYY
         "%m/%d/%Y %H:%M:%S",
         "%m/%d/%Y %H:%M",
-        "%d-%m-%Y %H:%M",
+        // MM-DD-YYYY
+        "%m-%d-%Y %H:%M:%S",
         "%m-%d-%Y %H:%M",
-        "%d %b %Y %H:%M",
-        "%d %B %Y %H:%M",
+        // Month name DD, YYYY
+        "%b %d %Y %H:%M:%S",
         "%b %d %Y %H:%M",
+        "%B %d %Y %H:%M:%S",
         "%B %d %Y %H:%M",
+        "%b %d, %Y %H:%M:%S",
         "%b %d, %Y %H:%M",
+        "%B %d, %Y %H:%M:%S",
         "%B %d, %Y %H:%M",
+        // 12-hour clock variants
+        "%m/%d/%Y %I:%M %p",
+        "%m/%d/%Y %I:%M:%S %p",
+        "%m-%d-%Y %I:%M %p",
+        "%m-%d-%Y %I:%M:%S %p",
+        "%b %d, %Y %I:%M %p",
+        "%B %d, %Y %I:%M %p",
+        "%b %d, %Y %I:%M:%S %p",
+        "%B %d, %Y %I:%M:%S %p",
     ];
     for fmt in datetime_fmts {
         if let Ok(dt) = NaiveDateTime::parse_from_str(s_noz, fmt) {
@@ -178,23 +191,24 @@ fn parse_due_date(s: &str) -> Result<Option<dto::DateTime>, String> {
 
     // 6. Date-only formats
     let date_fmts: &[&str] = &[
+        // ISO 8601
         "%Y-%m-%d",
         "%Y/%m/%d",
         "%Y.%m.%d",
-        "%d/%m/%Y",
+        "%Y%m%d",
+        // MM/DD/YYYY
         "%m/%d/%Y",
-        "%d-%m-%Y",
         "%m-%d-%Y",
-        "%d.%m.%Y",
-        "%d %b %Y",
-        "%d %B %Y",
+        // Month name DD, YYYY
         "%b %d %Y",
         "%B %d %Y",
         "%b %d, %Y",
         "%B %d, %Y",
+        // Month/Year only
         "%b %Y",
         "%B %Y",
-        "%Y%m%d",
+        "%m/%Y",
+        "%m-%Y",
     ];
     for fmt in date_fmts {
         if let Ok(d) = NaiveDate::parse_from_str(s_noz, fmt) {
