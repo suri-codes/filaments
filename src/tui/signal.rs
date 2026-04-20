@@ -79,6 +79,9 @@ pub enum Signal {
     /// Only works with the inspector
     EditDue,
 
+    /// Toggle whether a `Task` is finished or not.
+    ToggleFinish,
+
     /// Internal Signal that tells the app to resume interpreting keys
     ExitRawText,
 

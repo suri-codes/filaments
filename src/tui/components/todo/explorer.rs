@@ -125,7 +125,13 @@ impl From<&TodoNode> for ExplorerListItem<'_> {
                 .bg(g.tag.color)
                 .fg(Color::Black),
             TodoNodeKind::Task(ref t) => {
-                Span::from(format!(" {}", t.name.clone())).fg(t.group.tag.color)
+                let mut name = Span::from(format!(" {}", t.name.clone())).fg(t.group.tag.color);
+
+                if t.finished_at.is_some() {
+                    name = name.add_modifier(Modifier::CROSSED_OUT);
+                }
+
+                name
             }
             TodoNodeKind::Root => Span::from("THIS SHOULD NOT BE VISIBLE"),
         };

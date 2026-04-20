@@ -37,7 +37,8 @@
                 "n": EditName,
                 "p": EditPriority,
                 "d": EditDue,
-                "o": OpenZettel
+                "o": OpenZettel,
+                "f": ToggleFinish
             },
         ),
         tasklist: (

@@ -169,6 +169,7 @@ impl Component for Inspector<'_> {
         Ok(())
     }
 
+    #[expect(clippy::too_many_lines)]
     async fn update(&mut self, signal: Signal) -> color_eyre::Result<Option<Signal>> {
         match signal {
             Signal::SwitchTo {
@@ -289,6 +290,25 @@ impl Component for Inspector<'_> {
                 let path = kt.index.get_zod(zid).path.clone();
                 drop(kt);
                 return Ok(Some(Signal::Helix { path }));
+            }
+
+            Signal::ToggleFinish if self.is_active => {
+                let Some(ref curr) = self.inspecting else {
+                    return Ok(None);
+                };
+
+                let kt = self.kh.write().await;
+
+                let node = kt.todo_tree.get_node_by_nano_id(curr).data();
+
+                let TodoNodeKind::Task(t) = &node.kind else {
+                    return Ok(None);
+                };
+
+                Task::toggle_finish(t.id.clone(), &kt).await?;
+
+                drop(kt);
+                return Ok(Some(Signal::Refresh));
             }
 
             _ => {}

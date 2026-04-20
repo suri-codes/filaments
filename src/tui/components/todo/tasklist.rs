@@ -29,10 +29,12 @@ impl TaskList<'_> {
                     .expect("This should not panic as the nodeid should exist inside"),
             )
             .filter(|(node, _)| {
-                let TodoNodeKind::Task(_) = node.data().kind else {
-                    return false;
-                };
-                true
+                if let TodoNodeKind::Task(ref t) = node.data().kind
+                    && t.finished_at().is_none()
+                {
+                    return true;
+                }
+                false
             })
             .collect::<Vec<_>>();
 

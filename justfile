@@ -20,7 +20,7 @@ run:
 test:
     cargo nextest r {{_cargo_flags}} 
 reset: 
-    rm -rf ZettleKasten
+    rm -rf ./ZettelKasten
     rm -rf ./.data
     cargo run -- init
     cargo run
