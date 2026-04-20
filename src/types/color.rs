@@ -20,6 +20,11 @@ impl From<ColorDTO> for Color {
         Self(value)
     }
 }
+impl From<Color> for ColorDTO {
+    fn from(value: Color) -> Self {
+        value.0
+    }
+}
 
 impl From<Color> for RatColor {
     fn from(value: Color) -> Self {

@@ -15,7 +15,7 @@ use crate::{
         Signal,
         components::{Component, DEFAULT_NAME},
     },
-    types::{Due, Group, KastenHandle, Priority, Task, TodoNode, TodoNodeKind},
+    types::{Due, Group, KastenHandle, Priority, Tag, Task, TodoNode, TodoNodeKind},
 };
 
 mod rootview;
@@ -307,6 +307,20 @@ impl Component for Inspector<'_> {
 
                 Task::toggle_finish(t.id.clone(), &kt).await?;
 
+                drop(kt);
+                return Ok(Some(Signal::Refresh));
+            }
+
+            Signal::RandomColor if self.is_active => {
+                let Some(ref curr) = self.inspecting else {
+                    return Ok(None);
+                };
+                let kt = self.kh.write().await;
+                let node = kt.todo_tree.get_node_by_nano_id(curr).data();
+                let TodoNodeKind::Group(g) = &node.kind else {
+                    return Ok(None);
+                };
+                Tag::randomize_color(g.tag.id.clone(), &kt).await?;
                 drop(kt);
                 return Ok(Some(Signal::Refresh));
             }

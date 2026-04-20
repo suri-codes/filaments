@@ -38,7 +38,8 @@
                 "p": EditPriority,
                 "d": EditDue,
                 "o": OpenZettel,
-                "f": ToggleFinish
+                "f": ToggleFinish,
+                "r": RandomColor
             },
         ),
         tasklist: (

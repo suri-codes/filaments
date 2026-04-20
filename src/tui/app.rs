@@ -45,7 +45,7 @@ pub enum Page {
 
 impl Default for Page {
     fn default() -> Self {
-        Self::Todo(TodoRegion::Explorer)
+        Self::Todo(TodoRegion::TaskList)
     }
 }
 

@@ -55,6 +55,22 @@ impl Tag {
 
         Ok(())
     }
+
+    pub async fn randomize_color(id: NanoId, kt: &Kasten) -> Result<()> {
+        let new_color = Color::default();
+
+        TagEntity::load()
+            .filter_by_nano_id(id.clone())
+            .one(&kt.db)
+            .await?
+            .expect("Invariant Broken: Must exist")
+            .into_active_model()
+            .set_color(new_color)
+            .update(&kt.db)
+            .await?;
+
+        Ok(())
+    }
 }
 
 impl From<TagModel> for Tag {

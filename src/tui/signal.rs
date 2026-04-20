@@ -89,6 +89,9 @@ pub enum Signal {
     /// as signals
     EnterRawText,
 
+    /// Randomly change the color of a `Group`!
+    RandomColor,
+
     /// this is fucking temporary
     Helix {
         path: PathBuf,
