@@ -11,7 +11,7 @@ use crate::{
     types::{KastenHandle, Zettel},
 };
 
-mod preview;
+pub mod preview;
 mod search;
 mod zettel_list;
 mod zettel_view;
@@ -328,7 +328,7 @@ impl Component for Zk<'_> {
                 self.update_views_from_zettel_list_selection().await?;
             }
 
-            Signal::OpenZettel => {
+            Signal::OpenZettel if self.active => {
                 let Some(selcted) = zettel_list.state.selected() else {
                     return Ok(None);
                 };

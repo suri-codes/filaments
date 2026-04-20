@@ -35,7 +35,10 @@
                 "2": SwitchTo(page: Todo(Inspector)),
                 "3": SwitchTo(page: Todo(TaskList)),
                 "n": EditName,
-                "p": EditPriority
+                "p": EditPriority,
+                "d": EditDue,
+                "o": OpenZettel,
+                "f": ToggleFinish
             },
         ),
         tasklist: (

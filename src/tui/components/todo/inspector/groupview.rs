@@ -5,13 +5,17 @@ use ratatui::{
 };
 use ratatui_textarea::TextArea;
 
-use crate::types::Group;
+use crate::{
+    tui::components::preview::Preview,
+    types::{Group, Index},
+};
 
 #[derive(Debug, Clone)]
 pub struct GroupView<'text> {
     pub name: TextArea<'text>,
     pub priority: TextArea<'text>,
     created_at: Paragraph<'text>,
+    preview: Preview<'text>,
     layouts: Layouts,
 }
 
@@ -26,6 +30,7 @@ impl Default for Layouts {
         Self {
             left_content: Layout::horizontal(vec![
                 Constraint::Percentage(30),
+                Constraint::Min(1),
                 Constraint::Fill(100),
             ]),
             name_priority_created_at: Layout::vertical(vec![
@@ -38,23 +43,28 @@ impl Default for Layouts {
     }
 }
 
-impl From<&Group> for GroupView<'_> {
-    fn from(value: &Group) -> Self {
-        let mut name = TextArea::new(vec![value.name.clone()]);
+impl From<(&Group, &Index)> for GroupView<'_> {
+    fn from(value: (&Group, &Index)) -> Self {
+        let group = value.0;
+        let idx = value.1;
+        let mut name = TextArea::new(vec![group.name.clone()]);
         name.set_block(Block::bordered().title("[N]ame"));
         name.set_cursor_style(Style::reset());
         name.set_cursor_line_style(Style::reset());
 
-        let mut priority = TextArea::new(vec![value.priority.to_string()]);
+        let mut priority = TextArea::new(vec![group.priority.to_string()]);
         priority.set_block(Block::bordered().title("[P]riority"));
         priority.set_cursor_style(Style::reset());
         priority.set_cursor_line_style(Style::reset());
 
+        let preview = idx.get_zod(&group.zettel.id).body.clone().into();
+
         Self {
             name,
             priority,
-            created_at: Paragraph::new(value.created_at())
+            created_at: Paragraph::new(group.created_at())
                 .block(Block::bordered().title("Created At")),
+            preview,
             layouts: Layouts::default(),
         }
     }
@@ -65,15 +75,16 @@ impl Widget for GroupView<'_> {
     where
         Self: Sized,
     {
-        let (name_rect, priority_rect, created_at, _content_rect) = {
+        let (name_rect, priority_rect, created_at, content_rect) = {
             let rects = self.layouts.left_content.split(area);
             let l_rects = self.layouts.name_priority_created_at.split(rects[0]);
 
-            (l_rects[0], l_rects[1], l_rects[2], rects[1])
+            (l_rects[0], l_rects[1], l_rects[2], rects[2])
         };
 
         self.name.render(name_rect, buf);
         self.priority.render(priority_rect, buf);
         self.created_at.render(created_at, buf);
+        self.preview.render(content_rect, buf);
     }
 }

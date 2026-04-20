@@ -51,6 +51,7 @@ pub enum Signal {
 
     /// User asks to open a `Zettel`
     OpenZettel,
+
     /// The user is done editing a `Zettel`
     ClosedZettel {
         /// the id of the `Zettel` that was closed
@@ -73,6 +74,13 @@ pub enum Signal {
     /// Edit the `Priority` of a `Task` or a `Group`.
     /// Only works with the inspector
     EditPriority,
+
+    /// Edit the `DueDate` of a `Task`
+    /// Only works with the inspector
+    EditDue,
+
+    /// Toggle whether a `Task` is finished or not.
+    ToggleFinish,
 
     /// Internal Signal that tells the app to resume interpreting keys
     ExitRawText,

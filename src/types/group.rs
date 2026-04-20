@@ -28,49 +28,6 @@ pub struct Group {
 }
 
 impl Group {
-    pub fn created_at(&self) -> String {
-        self.created_at
-            .format(frontmatter::DATE_FMT_STR)
-            .to_string()
-    }
-    pub fn modified_at(&self) -> String {
-        self.modified_at
-            .format(frontmatter::DATE_FMT_STR)
-            .to_string()
-    }
-
-    pub async fn alter_name(
-        id: NanoId,
-        new_name: impl Into<String>,
-        kt: &mut Kasten,
-    ) -> Result<()> {
-        let new_name = new_name.into();
-
-        let g = GroupEntity::load()
-            .filter_by_nano_id(id.clone())
-            .with(TagEntity)
-            .with((ZettelEntity, TagEntity))
-            .one(&kt.db)
-            .await?
-            .expect("Invariant Broken: Must exist");
-
-        let tag_id = g.tag.as_ref().expect("Must be loaded").nano_id.clone();
-
-        let zettel_id = g.zettel_id.clone();
-
-        let _ = g
-            .into_active_model()
-            .set_name(new_name.as_str())
-            .update(&kt.db)
-            .await?;
-
-        Tag::alter_name(tag_id, &new_name, kt).await?;
-
-        Zettel::alter_name(zettel_id.into(), &new_name, kt).await?;
-
-        Ok(())
-    }
-
     pub async fn new(
         name: impl Into<String>,
         parent_id: Option<NanoId>,
@@ -124,6 +81,68 @@ impl Group {
 
         kt.todo_tree.insert_group(&group);
         Ok(group)
+    }
+
+    pub async fn alter_name(
+        id: NanoId,
+        new_name: impl Into<String>,
+        kt: &mut Kasten,
+    ) -> Result<()> {
+        let new_name = new_name.into();
+
+        let g = GroupEntity::load()
+            .filter_by_nano_id(id.clone())
+            .with(TagEntity)
+            .with((ZettelEntity, TagEntity))
+            .one(&kt.db)
+            .await?
+            .expect("Invariant Broken: Must exist");
+
+        let tag_id = g.tag.as_ref().expect("Must be loaded").nano_id.clone();
+
+        let zettel_id = g.zettel_id.clone();
+
+        let _ = g
+            .into_active_model()
+            .set_name(new_name.as_str())
+            .update(&kt.db)
+            .await?;
+
+        Tag::alter_name(tag_id, &new_name, kt).await?;
+
+        Zettel::alter_name(zettel_id.into(), &new_name, kt).await?;
+
+        Ok(())
+    }
+
+    pub async fn alter_priority(id: NanoId, new_prio: Priority, kt: &Kasten) -> Result<()> {
+        GroupEntity::load()
+            .filter_by_nano_id(id)
+            .one(&kt.db)
+            .await?
+            .expect("Must exist")
+            .into_active_model()
+            .set_priority(new_prio)
+            .update(&kt.db)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Calcualtes the `p_score` of this `Group`
+    pub fn p_score(&self, parent_score: f64) -> f64 {
+        self.priority.p_score() * parent_score
+    }
+
+    pub fn created_at(&self) -> String {
+        self.created_at
+            .format(frontmatter::DATE_FMT_STR)
+            .to_string()
+    }
+    pub fn modified_at(&self) -> String {
+        self.modified_at
+            .format(frontmatter::DATE_FMT_STR)
+            .to_string()
     }
 }
 

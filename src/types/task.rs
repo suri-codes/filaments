@@ -1,10 +1,11 @@
+use chrono::Local;
 use color_eyre::eyre::{Context, Result, eyre};
 use dto::{
     DateTime, GroupEntity, HasOne, IntoActiveModel as _, NanoId, TagEntity, TaskActiveModel,
     TaskEntity, TaskModelEx, ZettelEntity,
 };
 
-use crate::types::{Group, Kasten, Priority, Zettel, frontmatter};
+use crate::types::{Due, Group, Kasten, Priority, Zettel, frontmatter};
 
 /// a `Task` that you have to complete!
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -15,7 +16,7 @@ pub struct Task {
     pub id: NanoId,
     pub name: String,
     pub priority: Priority,
-    pub due: Option<DateTime>,
+    pub due: Due,
     pub group_id: NanoId,
     pub finished_at: Option<DateTime>,
     pub created_at: DateTime,
@@ -115,9 +116,74 @@ impl Task {
         Ok(())
     }
 
-    pub fn due(&self) -> Option<String> {
-        self.due
-            .map(|due| due.format(frontmatter::DATE_FMT_STR).to_string())
+    pub async fn alter_priority(id: NanoId, new_prio: Priority, kt: &Kasten) -> Result<()> {
+        TaskEntity::load()
+            .filter_by_nano_id(id)
+            .one(&kt.db)
+            .await?
+            .expect("Must exist")
+            .into_active_model()
+            .set_priority(new_prio)
+            .update(&kt.db)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn alter_due(id: NanoId, new_due: Option<DateTime>, kt: &Kasten) -> Result<()> {
+        TaskEntity::load()
+            .filter_by_nano_id(id)
+            .one(&kt.db)
+            .await?
+            .expect("Must exist")
+            .into_active_model()
+            .set_due(new_due)
+            .update(&kt.db)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn toggle_finish(id: NanoId, kt: &Kasten) -> Result<()> {
+        let now = Local::now().naive_local();
+
+        let model = TaskEntity::load()
+            .filter_by_nano_id(id)
+            .one(&kt.db)
+            .await?
+            .expect("Must exist");
+
+        let new_finished_at = if model.finished_at.is_some() {
+            None
+        } else {
+            Some(now)
+        };
+
+        model
+            .into_active_model()
+            .set_finished_at(new_finished_at)
+            .update(&kt.db)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Calcualtes the `p_score` of this `Task`
+    //NOTE: formula from claude
+    #[expect(clippy::cast_precision_loss)]
+    pub fn p_score(&self, parent_score: f64) -> f64 {
+        let priority_score = self.priority.p_score(); // [0.0, 1.0]
+
+        let urgency = self.due.0.map_or(0.0, |due| {
+            let now = chrono::Local::now().naive_local();
+            let hours_remaining = (due - now).num_minutes() as f64 / 60.0;
+            let decay = 72.0_f64;
+            (-hours_remaining / decay).exp2()
+        });
+
+        // base: priority alone. bonus: urgency on top, so any due date > no due date.
+        // urgency is in (0.0, ~inf] so having a due date always adds to the score.
+        (priority_score + urgency) * parent_score
     }
     pub fn finished_at(&self) -> Option<String> {
         self.finished_at
@@ -142,7 +208,7 @@ impl From<TaskModelEx> for Task {
             id: value.nano_id,
             name: value.name,
             priority: value.priority.into(),
-            due: value.due,
+            due: value.due.into(),
             group_id: value.group_id,
             finished_at: value.finished_at,
             created_at: value.created_at,

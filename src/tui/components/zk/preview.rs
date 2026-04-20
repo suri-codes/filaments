@@ -1,14 +1,22 @@
-use ratatui::{text::Text, widgets::Widget};
+use ratatui::{
+    text::Text,
+    widgets::{Block, BorderType, Borders, Paragraph, Widget},
+};
 
 #[derive(Debug, Clone)]
 pub struct Preview<'text> {
-    content: Text<'text>,
+    content: Paragraph<'text>,
 }
 
 impl From<String> for Preview<'_> {
     fn from(value: String) -> Self {
         Self {
-            content: Text::from(value),
+            content: Paragraph::new(Text::from(value)).block(
+                Block::new()
+                    .borders(Borders::TOP | Borders::LEFT)
+                    .border_type(BorderType::Rounded)
+                    .title("Preview"),
+            ),
         }
     }
 }
