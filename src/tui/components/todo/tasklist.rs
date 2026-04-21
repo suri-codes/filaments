@@ -131,12 +131,23 @@ impl From<&TodoNode> for TaskListItem<'_> {
 impl<'text> From<TaskListItem<'text>> for Text<'text> {
     fn from(value: TaskListItem<'text>) -> Self {
         let total_width = value.width.saturating_sub(2) as usize;
-        let name_col = 5 * total_width / 9;
+        let name_col = 4 * total_width / 9;
         let p_score_col = 10; // e.g. "0.103" — fixed width
         let due_col = 22; // enough for "2026-04-22 11:59:59 PM" or a priority label
         let group_col = total_width.saturating_sub(name_col + p_score_col + due_col);
 
-        let name_str = format!("{:<width$}", value.name.content, width = name_col);
+        let name_str = if value.name.content.len() > name_col {
+            let truncated: String = value
+                .name
+                .content
+                .chars()
+                .take(name_col.saturating_sub(5))
+                .collect();
+            format!("{truncated}...  ")
+        } else {
+            format!("{:<width$}", value.name.content, width = name_col)
+        };
+
         let group_str = format!("{:<width$}", value.group.content, width = group_col);
         let p_score_str = format!("{:<width$}", value.p_score.content, width = p_score_col);
         let due_str = format!("{:>width$}", value.due_priority.content, width = due_col);
